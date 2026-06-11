@@ -1,0 +1,13 @@
+{
+  "name": "wes-get-rich-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Node.js frontend server for wes-get-rich",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

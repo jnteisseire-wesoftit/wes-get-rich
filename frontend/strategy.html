@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wes Get Rich - Strategy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f4f7f1;
+      --surface: #ffffff;
+      --ink: #172214;
+      --muted: #5c6858;
+      --accent: #0d7a54;
+      --border: #d4dfcf;
+      --danger: #c03d3d;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Space Grotesk", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 90% 10%, #d7f1cc 0%, transparent 35%),
+        radial-gradient(circle at 10% 90%, #f5e9bb 0%, transparent 30%),
+        var(--bg);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      gap: 20px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 1.35rem;
+    }
+
+    .nav {
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav a {
+      text-decoration: none;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      color: var(--ink);
+      background: #ffffff;
+      font-weight: 600;
+    }
+
+    .nav a.active {
+      background: #dff2e8;
+      border-color: #b8d9c8;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(23, 34, 20, 0.08);
+      overflow: hidden;
+    }
+
+    .card h2 {
+      margin: 0;
+      padding: 16px 18px;
+      background: linear-gradient(90deg, #e7f4df, #fff7d7);
+      border-bottom: 1px solid var(--border);
+      font-size: 1.05rem;
+    }
+
+    .content { padding: 16px 18px 20px; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      background: linear-gradient(160deg, #ffffff, #f7faf5);
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-bottom: 6px;
+    }
+
+    .value {
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: end;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-size: 0.9rem;
+      color: var(--muted);
+      min-width: 160px;
+    }
+
+    select, button {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+      min-height: 1.2rem;
+    }
+
+    .error { color: var(--danger); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    @media (max-width: 980px) {
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+      .stats { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="topbar">
+      <h1>Wes Get Rich Dashboard</h1>
+      <nav class="nav" aria-label="Main navigation">
+        <a href="/transactions">Transactions</a>
+        <a href="/strategy" class="active">Strategy</a>
+      </nav>
+    </section>
+
+    <section class="card">
+      <h2>Strategy Metrics (Hourly)</h2>
+      <div class="content">
+        <div class="controls">
+          <label>
+            History Source
+            <select id="history-source">
+              <option value="db" selected>Database (5m stored samples)</option>
+              <option value="kraken">Kraken OHLC (direct)</option>
+            </select>
+          </label>
+          <label>
+            Window
+            <select id="window-hours">
+              <option value="24" selected>24 hours</option>
+              <option value="48">48 hours</option>
+              <option value="72">72 hours</option>
+            </select>
+          </label>
+          <button id="refresh-btn" class="primary" type="button">Refresh Now</button>
+        </div>
+
+        <div id="meta" class="meta"></div>
+
+        <div class="stats">
+          <article class="stat">
+            <div class="label">Current BTC/USD</div>
+            <div id="current-price" class="value">-</div>
+          </article>
+          <article class="stat">
+            <div class="label">Window Change</div>
+            <div id="window-change" class="value">-</div>
+          </article>
+          <article class="stat">
+            <div class="label">Average Price</div>
+            <div id="avg-price" class="value">-</div>
+          </article>
+          <article class="stat">
+            <div class="label">Min Price</div>
+            <div id="min-price" class="value">-</div>
+          </article>
+          <article class="stat">
+            <div class="label">Max Price</div>
+            <div id="max-price" class="value">-</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Hourly Buckets</h2>
+      <div class="content">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Hour</th>
+                <th>Samples</th>
+                <th>Min</th>
+                <th>Avg</th>
+                <th>Max</th>
+                <th>Last</th>
+              </tr>
+            </thead>
+            <tbody id="hourly-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Recent 5-Minute Samples</h2>
+      <div class="content">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Sample Time</th>
+                <th>Price USD</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody id="history-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = window.location.origin.replace(':2513', ':2512');
+    const sourceEl = document.getElementById('history-source');
+    const hoursEl = document.getElementById('window-hours');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const metaEl = document.getElementById('meta');
+
+    const currentPriceEl = document.getElementById('current-price');
+    const windowChangeEl = document.getElementById('window-change');
+    const avgPriceEl = document.getElementById('avg-price');
+    const minPriceEl = document.getElementById('min-price');
+    const maxPriceEl = document.getElementById('max-price');
+
+    const hourlyBody = document.getElementById('hourly-body');
+    const historyBody = document.getElementById('history-body');
+
+    function usd(value) {
+      if (value == null) return '-';
+      return `$${Number(value).toFixed(2)}`;
+    }
+
+    function pct(value) {
+      if (value == null) return '-';
+      return `${Number(value).toFixed(2)}%`;
+    }
+
+    async function fetchMetrics(hours) {
+      const res = await fetch(`${API_BASE}/strategy/metrics?asset_symbol=BTC&hours=${hours}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'Failed to load metrics' }));
+        throw new Error(err.detail || 'Failed to load metrics');
+      }
+      return res.json();
+    }
+
+    async function fetchHistory(hours, source) {
+      const res = await fetch(`${API_BASE}/strategy/history?asset_symbol=BTC&hours=${hours}&source=${source}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'Failed to load history' }));
+        throw new Error(err.detail || 'Failed to load history');
+      }
+      return res.json();
+    }
+
+    function renderMetrics(metrics) {
+      currentPriceEl.textContent = usd(metrics.current_price_usd);
+      windowChangeEl.textContent = pct(metrics.change_window_pct);
+      avgPriceEl.textContent = usd(metrics.avg_price_usd);
+      minPriceEl.textContent = usd(metrics.min_price_usd);
+      maxPriceEl.textContent = usd(metrics.max_price_usd);
+
+      hourlyBody.innerHTML = '';
+      for (const row of metrics.hourly) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${new Date(row.hour_start).toLocaleString()}</td>
+          <td>${row.sample_count}</td>
+          <td>${usd(row.min_price_usd)}</td>
+          <td>${usd(row.avg_price_usd)}</td>
+          <td>${usd(row.max_price_usd)}</td>
+          <td>${usd(row.last_price_usd)}</td>
+        `;
+        hourlyBody.appendChild(tr);
+      }
+    }
+
+    function renderHistory(history) {
+      historyBody.innerHTML = '';
+      const recent = history.samples.slice(-120).reverse();
+
+      for (const item of recent) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${new Date(item.sampled_at).toLocaleString()}</td>
+          <td>${usd(item.price_usd)}</td>
+          <td>${item.source}</td>
+        `;
+        historyBody.appendChild(tr);
+      }
+    }
+
+    async function refreshAll() {
+      const hours = Number(hoursEl.value);
+      const source = sourceEl.value;
+      metaEl.classList.remove('error');
+      metaEl.textContent = 'Loading strategy data...';
+
+      try {
+        const [metrics, history] = await Promise.all([
+          fetchMetrics(hours),
+          fetchHistory(hours, source),
+        ]);
+
+        renderMetrics(metrics);
+        renderHistory(history);
+
+        const generatedAt = new Date(metrics.generated_at).toLocaleString();
+        metaEl.textContent = `Metrics updated at ${generatedAt}. Automatic metrics refresh: every hour. Samples are collected every 5 minutes by backend.`;
+      } catch (error) {
+        metaEl.classList.add('error');
+        metaEl.textContent = error.message;
+      }
+    }
+
+    refreshBtn.addEventListener('click', refreshAll);
+    hoursEl.addEventListener('change', refreshAll);
+    sourceEl.addEventListener('change', refreshAll);
+
+    refreshAll();
+    setInterval(refreshAll, 60 * 60 * 1000);
+  </script>
+</body>
+</html>

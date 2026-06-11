@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wes Get Rich - Transactions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f4f7f1;
+      --surface: #ffffff;
+      --ink: #172214;
+      --muted: #5c6858;
+      --accent: #0d7a54;
+      --accent-2: #f1c84b;
+      --danger: #c03d3d;
+      --border: #d4dfcf;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Space Grotesk", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 90% 10%, #d7f1cc 0%, transparent 35%),
+        radial-gradient(circle at 10% 90%, #f5e9bb 0%, transparent 30%),
+        var(--bg);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 1.35rem;
+    }
+
+    .nav {
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav a {
+      text-decoration: none;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      color: var(--ink);
+      background: #ffffff;
+      font-weight: 600;
+    }
+
+    .nav a.active {
+      background: #dff2e8;
+      border-color: #b8d9c8;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(23, 34, 20, 0.08);
+      overflow: hidden;
+    }
+
+    .card h2 {
+      margin: 0;
+      padding: 16px 18px;
+      background: linear-gradient(90deg, #e7f4df, #fff7d7);
+      border-bottom: 1px solid var(--border);
+      font-size: 1.05rem;
+    }
+
+    .content { padding: 16px 18px 20px; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      background: linear-gradient(160deg, #ffffff, #f7faf5);
+    }
+
+    .stat .label {
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-bottom: 8px;
+    }
+
+    .stat .value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .stat .sub {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    input, select, textarea {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    textarea { min-height: 86px; resize: vertical; }
+
+    .row-full { grid-column: 1 / -1; }
+
+    .actions {
+      margin-top: 14px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+
+    .primary { background: var(--accent); color: white; }
+    .secondary { background: #e8eee5; color: var(--ink); }
+
+    .status {
+      margin-top: 12px;
+      font-size: 0.92rem;
+      min-height: 1.2rem;
+    }
+
+    .ok { color: var(--accent); }
+    .err { color: var(--danger); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    th { color: var(--muted); font-weight: 600; }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    @media (max-width: 820px) {
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid { grid-template-columns: 1fr; }
+      body { padding: 12px; }
+    }
+
+    @media (max-width: 540px) {
+      .stats { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="topbar">
+      <h1>Wes Get Rich Dashboard</h1>
+      <nav class="nav" aria-label="Main navigation">
+        <a href="/transactions" class="active">Transactions</a>
+        <a href="/strategy">Strategy</a>
+      </nav>
+    </section>
+
+    <section class="card">
+      <h2>Portfolio Summary</h2>
+      <div class="content">
+        <div class="stats">
+          <article class="stat">
+            <div class="label">Total Profit</div>
+            <div class="value" id="sum-profit">$0.00</div>
+            <div class="sub">Sum of all positive P/L positions</div>
+          </article>
+          <article class="stat">
+            <div class="label">Total Loss</div>
+            <div class="value" id="sum-loss">$0.00</div>
+            <div class="sub">Absolute sum of all negative P/L positions</div>
+          </article>
+          <article class="stat">
+            <div class="label">Current Invested Amount</div>
+            <div class="value" id="sum-invested">$0.00</div>
+            <div class="sub">Open buy cost basis (including fees)</div>
+          </article>
+          <article class="stat">
+            <div class="label">Current Total Value</div>
+            <div class="value" id="sum-value">$0.00</div>
+            <div class="sub" id="sum-price-note">Based on current BTC/USD</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Create Transaction</h2>
+      <div class="content">
+        <form id="tx-form" class="grid">
+          <label>
+            Platform
+            <input name="platform_name" value="kraken" required />
+          </label>
+          <label>
+            Asset Symbol
+            <input name="asset_symbol" value="BTC" required />
+          </label>
+          <label>
+            Action
+            <select name="action">
+              <option value="BUY">BUY</option>
+              <option value="SELL">SELL</option>
+            </select>
+          </label>
+          <label>
+            Quantity BTC
+            <input name="quantity_btc" type="number" step="0.00000001" min="0.00000001" required />
+          </label>
+          <label>
+            Unit Price USD
+            <input name="unit_price_usd" type="number" step="0.01" min="0.01" required />
+          </label>
+          <label>
+            Fee USD
+            <input name="fee_usd" type="number" step="0.01" min="0" value="0" />
+          </label>
+          <label>
+            Status
+            <select name="status">
+              <option value="OPEN">OPEN</option>
+              <option value="CLOSED">CLOSED</option>
+            </select>
+          </label>
+          <label>
+            Transaction Date
+            <input name="transaction_at" type="datetime-local" required />
+          </label>
+          <label>
+            Strategy Tag
+            <input name="strategy_tag" value="manual-ui" />
+          </label>
+          <label>
+            Paired Buy Transaction ID
+            <input name="paired_buy_transaction_id" type="number" min="1" />
+          </label>
+          <label class="row-full">
+            Notes
+            <textarea name="notes" placeholder="Optional details..."></textarea>
+          </label>
+          <div class="actions row-full">
+            <button class="primary" type="submit">Save Transaction</button>
+            <button class="secondary" type="button" id="refresh-btn">Refresh List</button>
+          </div>
+          <div id="status" class="status row-full"></div>
+        </form>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Past Transactions</h2>
+      <div class="content">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Platform</th>
+                <th>Asset</th>
+                <th>Action</th>
+                <th>Qty BTC</th>
+                <th>Price USD</th>
+                <th>Fee USD</th>
+                <th>PnL USD</th>
+                <th>PnL %</th>
+                <th>Status</th>
+                <th>Transaction Date</th>
+              </tr>
+            </thead>
+            <tbody id="tx-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = window.location.origin.replace(':2513', ':2512');
+    const form = document.getElementById('tx-form');
+    const statusEl = document.getElementById('status');
+    const txBody = document.getElementById('tx-body');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const sumProfitEl = document.getElementById('sum-profit');
+    const sumLossEl = document.getElementById('sum-loss');
+    const sumInvestedEl = document.getElementById('sum-invested');
+    const sumValueEl = document.getElementById('sum-value');
+    const sumPriceNoteEl = document.getElementById('sum-price-note');
+    const txDateInput = form.querySelector('input[name="transaction_at"]');
+
+    const now = new Date();
+    const offsetMs = now.getTimezoneOffset() * 60000;
+    txDateInput.value = new Date(now.getTime() - offsetMs).toISOString().slice(0, 16);
+
+    function setStatus(message, ok = true) {
+      statusEl.textContent = message;
+      statusEl.className = `status ${ok ? 'ok' : 'err'}`;
+    }
+
+    function toNum(v) {
+      if (v === '' || v == null) return null;
+      const n = Number(v);
+      return Number.isNaN(n) ? null : n;
+    }
+
+    function usd(n) {
+      return `$${Number(n).toFixed(2)}`;
+    }
+
+    function pct(n) {
+      if (n == null) return '-';
+      return `${Number(n).toFixed(2)}%`;
+    }
+
+    function derivePnl(tx, currentPrice, sellPnlByBuyId, buyById, exchangeFeeRate = 0.001) {
+      if (tx.action === 'BUY') {
+        const costBasis = (tx.quantity_btc * tx.unit_price_usd) + tx.fee_usd;
+
+        if (tx.status === 'OPEN') {
+          const marketValue = tx.quantity_btc * currentPrice;
+          const grossPnl = marketValue - costBasis;
+          const expectedSellFee = marketValue * exchangeFeeRate;
+          const netPnl = grossPnl - expectedSellFee;
+          const pnlPct = costBasis > 0 ? (netPnl / costBasis) * 100 : null;
+          return { pnlUsd: netPnl, pnlPct };
+        }
+
+        if (sellPnlByBuyId.has(tx.id)) {
+          const pnlUsd = sellPnlByBuyId.get(tx.id);
+          const pnlPct = costBasis > 0 ? (pnlUsd / costBasis) * 100 : null;
+          return { pnlUsd, pnlPct };
+        }
+
+        return { pnlUsd: null, pnlPct: null };
+      }
+
+      if (tx.action === 'SELL') {
+        if (tx.realized_pnl_usd == null) {
+          return { pnlUsd: null, pnlPct: null };
+        }
+
+        const buyTx = tx.paired_buy_transaction_id ? buyById.get(tx.paired_buy_transaction_id) : null;
+        if (!buyTx) {
+          return { pnlUsd: tx.realized_pnl_usd, pnlPct: null };
+        }
+
+        const costBasis = (buyTx.quantity_btc * buyTx.unit_price_usd) + buyTx.fee_usd;
+        const pnlPct = costBasis > 0 ? (tx.realized_pnl_usd / costBasis) * 100 : null;
+        return { pnlUsd: tx.realized_pnl_usd, pnlPct };
+      }
+
+      return { pnlUsd: null, pnlPct: null };
+    }
+
+    async function fetchCurrentBtcPrice() {
+      const res = await fetch(`${API_BASE}/market/price?asset_symbol=BTC`);
+      if (!res.ok) throw new Error('Failed to fetch BTC price');
+      const payload = await res.json();
+      return Number(payload.price_usd);
+    }
+
+    async function loadTransactions() {
+      const [txRes, metricsRes] = await Promise.all([
+        fetch(`${API_BASE}/transactions?limit=200`),
+        fetch(`${API_BASE}/portfolio/metrics?asset_symbol=BTC`),
+      ]);
+      
+      if (!txRes.ok) throw new Error('Failed to fetch transactions');
+      if (!metricsRes.ok) throw new Error('Failed to fetch portfolio metrics');
+      
+      const items = await txRes.json();
+      const metrics = await metricsRes.json();
+      
+      const currentPrice = metrics.current_price_usd;
+      
+      const buyById = new Map();
+      const sellPnlByBuyId = new Map();
+
+      for (const tx of items) {
+        if (tx.action === 'BUY') {
+          buyById.set(tx.id, tx);
+        }
+        if (tx.action === 'SELL' && tx.paired_buy_transaction_id != null && tx.realized_pnl_usd != null) {
+          sellPnlByBuyId.set(tx.paired_buy_transaction_id, Number(tx.realized_pnl_usd));
+        }
+      }
+
+      sumProfitEl.textContent = usd(metrics.total_realized_profit_usd);
+      sumLossEl.textContent = usd(metrics.total_realized_loss_usd);
+      
+      const currentInvested = metrics.total_invested_usd;
+      const currentValue = metrics.total_invested_usd + metrics.fee_adjusted_unrealized_pnl_usd;
+      
+      sumInvestedEl.textContent = usd(currentInvested);
+      sumValueEl.textContent = usd(currentValue);
+      sumPriceNoteEl.innerHTML = `
+        Based on BTC/USD ${usd(currentPrice)}<br>
+        <small style="color: var(--muted);">Unrealized PnL is <strong>net of exit fees</strong></small>
+      `;
+
+      txBody.innerHTML = '';
+      for (const tx of items) {
+        const derived = derivePnl(tx, currentPrice, sellPnlByBuyId, buyById, metrics.exchange_fee_rate);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${tx.id}</td>
+          <td>${tx.platform_name}</td>
+          <td>${tx.asset_symbol}</td>
+          <td>${tx.action}</td>
+          <td>${Number(tx.quantity_btc).toFixed(8)}</td>
+          <td>${Number(tx.unit_price_usd).toFixed(2)}</td>
+          <td>${Number(tx.fee_usd).toFixed(2)}</td>
+          <td>${derived.pnlUsd == null ? '-' : Number(derived.pnlUsd).toFixed(2)}</td>
+          <td>${pct(derived.pnlPct)}</td>
+          <td>${tx.status}</td>
+          <td>${new Date(tx.transaction_at).toLocaleString()}</td>
+        `;
+        txBody.appendChild(tr);
+      }
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const data = new FormData(form);
+
+      const payload = {
+        platform_name: data.get('platform_name')?.toString().trim(),
+        asset_symbol: data.get('asset_symbol')?.toString().trim().toUpperCase(),
+        action: data.get('action'),
+        quantity_btc: toNum(data.get('quantity_btc')),
+        unit_price_usd: toNum(data.get('unit_price_usd')),
+        fee_usd: toNum(data.get('fee_usd')) ?? 0,
+        status: data.get('status'),
+        transaction_at: new Date(data.get('transaction_at')).toISOString(),
+        strategy_tag: data.get('strategy_tag')?.toString().trim() || null,
+        notes: data.get('notes')?.toString().trim() || null,
+        paired_buy_transaction_id: toNum(data.get('paired_buy_transaction_id')),
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/transactions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: 'Unknown error' }));
+          throw new Error(err.detail || 'Failed to create transaction');
+        }
+
+        const created = await res.json();
+        setStatus(`Saved transaction #${created.id}`, true);
+        await loadTransactions();
+      } catch (error) {
+        setStatus(error.message, false);
+      }
+    });
+
+    refreshBtn.addEventListener('click', async () => {
+      try {
+        await loadTransactions();
+        setStatus('Transaction list refreshed', true);
+      } catch (error) {
+        setStatus(error.message, false);
+      }
+    });
+
+    loadTransactions().catch((error) => setStatus(error.message, false));
+  </script>
+</body>
+</html>

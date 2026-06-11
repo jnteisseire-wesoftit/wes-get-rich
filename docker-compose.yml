@@ -1,0 +1,68 @@
+services:
+  db:
+    build:
+      context: .
+      dockerfile: docker/db/Dockerfile
+    container_name: wes_get_rich_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-investor}
+      POSTGRES_USER: ${DB_USER:-investor}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-investor}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend_private
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-investor} -d ${DB_NAME:-investor}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: python:3.11-slim
+    container_name: wes_get_rich_backend
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./:/app
+    environment:
+      DB_HOST: db
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME:-investor}
+      DB_USER: ${DB_USER:-investor}
+      DB_PASSWORD: ${DB_PASSWORD:-investor}
+    command: >
+      sh -c "pip install --no-cache-dir -r requirements.txt &&
+      uvicorn src.api:app --host 0.0.0.0 --port 2512"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "2512:2512"
+    networks:
+      - backend_private
+      - app_public
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: wes_get_rich_frontend
+    restart: unless-stopped
+    environment:
+      PORT: 2513
+    depends_on:
+      - backend
+    ports:
+      - "2513:2513"
+    networks:
+      - app_public
+
+volumes:
+  pgdata:
+
+networks:
+  backend_private:
+    internal: true
+  app_public:
