@@ -201,7 +201,7 @@ When cash is needed to fund a new buy, pick the open position with the **highest
 |---|---|---|
 | `WALLET_FRACTION_PER_TRADE` | `0.10` | Fraction of total wallet per buy |
 | `MAX_OPEN_POSITIONS` | `10` | Cap on concurrent open positions |
-| `MIN_MINUTES_BETWEEN_TRADES` | `1440` | Cooldown between buys (minutes, default 24 h) |
+| `MIN_MINUTES_BETWEEN_TRADES` | `2880` | Cooldown between buys (minutes, default 48 h) |
 | `TAKE_PROFIT_PCT` | `7.0` | Sell when net gain after fees reaches this % |
 | `STOP_LOSS_PCT` | `-4.0` | Hard floor for stop-loss % |
 | `DYNAMIC_STOP_LOSS_ATR_MULTIPLIER` | `2.0` | Volatility multiplier for dynamic stop |

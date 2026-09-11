@@ -407,7 +407,7 @@
 
             <div class="form-row full">
               <label>
-                Initial Wallet (USD)
+                Initial Wallet (CHF)
                 <input type="number" id="initial-wallet" value="200" step="100" min="100" required>
               </label>
             </div>
@@ -428,22 +428,22 @@
             <div class="form-row">
               <label>
                 Minutes Between Trades
-                <input type="number" id="min-minutes" value="1440" step="1" min="1" required>
+                <input type="number" id="min-minutes" value="2880" step="1" min="1" required>
               </label>
               <label>
                 Take Profit %
-                <input type="number" id="take-profit" value="2" step="0.1" min="0.1" required>
+                <input type="number" id="take-profit" value="7" step="0.1" min="0.1" required>
               </label>
             </div>
 
             <div class="form-row">
               <label>
                 Stop Loss %
-                <input type="number" id="stop-loss" value="-3.0" step="0.1" max="0" required>
+                <input type="number" id="stop-loss" value="-4.0" step="0.1" max="0" required>
               </label>
               <label>
                 Dynamic Stop Loss ATR Multiplier
-                <input type="number" id="atr-multiplier" value="1.5" step="0.1" min="0.1" required>
+                <input type="number" id="atr-multiplier" value="2.0" step="0.1" min="0.1" required>
               </label>
             </div>
 
@@ -591,7 +591,7 @@
                         </div>
                         <div class="sim-stat">
                             <span>Initial Wallet</span>
-                            <span class="sim-stat-value">$${sim.initial_wallet.toLocaleString()}</span>
+                            <span class="sim-stat-value">CHF ${sim.initial_wallet.toLocaleString()}</span>
                         </div>
                         <div class="sim-stat">
                             <span>Total Return</span>
@@ -644,7 +644,7 @@
                         </div>
                         <div class="metric-box">
                             <div class="metric-label">Initial Wallet</div>
-                            <div class="metric-value">$${sim.initial_wallet.toLocaleString()}</div>
+                            <div class="metric-value">CHF ${sim.initial_wallet.toLocaleString()}</div>
                         </div>
                         <div class="metric-box">
                             <div class="metric-label">Total Return</div>
@@ -653,7 +653,7 @@
                         <div class="metric-box">
                             <div class="metric-label">Realized P&L</div>
                             <div class="metric-value ${sim.metrics.realized_pnl >= 0 ? 'stat-positive' : 'stat-negative'}">
-                                $${sim.metrics.realized_pnl.toLocaleString('en-US', {maximumFractionDigits: 2})}
+                                CHF ${sim.metrics.realized_pnl.toLocaleString('en-US', {maximumFractionDigits: 2})}
                             </div>
                         </div>
                         <div class="metric-box">
@@ -700,7 +700,7 @@
 
                 sim.transactions.forEach((tx, idx) => {
                     const pnlClass = tx.realized_pnl === null ? '' : (tx.realized_pnl >= 0 ? 'stat-positive' : 'stat-negative');
-                    const pnlText = tx.realized_pnl === null ? '-' : `$${tx.realized_pnl.toFixed(2)}`;
+                    const pnlText = tx.realized_pnl === null ? '-' : `CHF ${tx.realized_pnl.toFixed(2)}`;
                     const triggerClass = `trigger-${tx.trigger_rule.replace(/ /g, '_')}`;
 
                     html += `
@@ -709,8 +709,8 @@
                             <td>${new Date(tx.simulated_at).toLocaleString('en-US', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})}</td>
                             <td><strong>${tx.action}</strong></td>
                             <td>${tx.quantity.toFixed(6)}</td>
-                            <td>$${tx.unit_price.toFixed(2)}</td>
-                            <td>$${tx.fee.toFixed(4)}</td>
+                            <td>CHF ${tx.unit_price.toFixed(2)}</td>
+                            <td>CHF ${tx.fee.toFixed(4)}</td>
                             <td><span class="trigger-badge ${triggerClass}">${tx.trigger_rule}</span></td>
                             <td class="${pnlClass}">${pnlText}</td>
                         </tr>

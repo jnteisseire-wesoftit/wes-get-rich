@@ -13,12 +13,24 @@ class BuyPosition:
     unit_price_usd: float
     fee_usd: float
 
+    @property
+    def unit_price_chf(self) -> float:
+        return self.unit_price_usd
+
+    @property
+    def fee_chf(self) -> float:
+        return self.fee_usd
+
 
 @dataclass
 class PriceSample:
     sampled_at: datetime
     price_usd: float
     source: str
+
+    @property
+    def price_chf(self) -> float:
+        return self.price_usd
 
 
 @dataclass
@@ -29,6 +41,22 @@ class HourlyMetric:
     max_price_usd: float
     avg_price_usd: float
     last_price_usd: float
+
+    @property
+    def min_price_chf(self) -> float:
+        return self.min_price_usd
+
+    @property
+    def max_price_chf(self) -> float:
+        return self.max_price_usd
+
+    @property
+    def avg_price_chf(self) -> float:
+        return self.avg_price_usd
+
+    @property
+    def last_price_chf(self) -> float:
+        return self.last_price_usd
 
 
 @dataclass

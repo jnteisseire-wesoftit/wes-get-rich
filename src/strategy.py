@@ -61,7 +61,7 @@ def calculate_fee_adjusted_pnl(
     - Net PnL: gross profit minus exit fees (true profit after closing)
     - Break-even price: price at which net PnL = 0
     """
-    cost_basis = (position.quantity_btc * position.unit_price_usd) + position.fee_usd
+    cost_basis = (position.quantity_btc * position.unit_price_chf) + position.fee_chf
     current_value = position.quantity_btc * current_price_chf
     
     expected_sell_fee = current_value * exchange_fee_rate
@@ -70,7 +70,7 @@ def calculate_fee_adjusted_pnl(
     
     fee_adjusted_pnl_pct = (net_pnl / cost_basis) * 100 if cost_basis > 0 else 0
     
-    total_fees = position.fee_usd + expected_sell_fee
+    total_fees = position.fee_chf + expected_sell_fee
     break_even_value = cost_basis + total_fees
     break_even_price = break_even_value / position.quantity_btc if position.quantity_btc > 0 else 0
     
@@ -145,7 +145,7 @@ def evaluate_position(
     - HOLD if change_pct > 0 (in profit)
     - WATCH if change_pct <= 0 (in loss or break-even)
     """
-    change_pct = ((current_price_chf - position.unit_price_usd) / position.unit_price_usd) * 100
+    change_pct = ((current_price_chf - position.unit_price_chf) / position.unit_price_chf) * 100
     
     # Compute fee-adjusted PnL for gate checks
     pnl_info = calculate_fee_adjusted_pnl(position, current_price_chf, exchange_fee_rate)
@@ -215,8 +215,8 @@ def evaluate_trend(
     long_count = min(long_window, len(ordered_metrics))
     
     # Use the LAST N samples (most recent prices) for moving average
-    short_ma = sum(m.avg_price_usd for m in ordered_metrics[-short_count:]) / short_count
-    long_ma = sum(m.avg_price_usd for m in ordered_metrics[-long_count:]) / long_count
+    short_ma = sum(m.avg_price_chf for m in ordered_metrics[-short_count:]) / short_count
+    long_ma = sum(m.avg_price_chf for m in ordered_metrics[-long_count:]) / long_count
     
     if short_ma > long_ma:
         return TrendSignal.BULLISH
@@ -248,8 +248,8 @@ def compute_dynamic_stop_loss(
     # Compute average range pct: (high - low) / avg * 100
     range_pcts = []
     for metric in recent_metrics:
-        if metric.avg_price_usd > 0:
-            range_pct = ((metric.max_price_usd - metric.min_price_usd) / metric.avg_price_usd) * 100
+        if metric.avg_price_chf > 0:
+            range_pct = ((metric.max_price_chf - metric.min_price_chf) / metric.avg_price_chf) * 100
             range_pcts.append(range_pct)
     
     if not range_pcts:
@@ -294,8 +294,8 @@ def is_crash_guard_active(
         return False
     
     # Calculate current window price change
-    current_first_price = current_window[0].price_usd
-    current_last_price = current_window[-1].price_usd
+    current_first_price = current_window[0].price_chf
+    current_last_price = current_window[-1].price_chf
     current_change_pct = ((current_last_price - current_first_price) / current_first_price) * 100 if current_first_price > 0 else 0
     
     # Get all samples in lookback period (excluding current window)
@@ -316,8 +316,8 @@ def is_crash_guard_active(
         start_sample = historical_samples[i]
         end_sample = historical_samples[i + sample_interval]
         
-        if start_sample.price_usd > 0:
-            price_change = ((end_sample.price_usd - start_sample.price_usd) / start_sample.price_usd) * 100
+        if start_sample.price_chf > 0:
+            price_change = ((end_sample.price_chf - start_sample.price_chf) / start_sample.price_chf) * 100
             historical_changes.append(price_change)
     
     # If we don't have enough historical price changes, can't compute percentile reliably

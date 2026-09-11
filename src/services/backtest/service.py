@@ -34,7 +34,7 @@ def _build_hourly_metrics(price_samples: list[PriceSample]) -> list[HourlyMetric
     by_hour: dict[datetime, list[float]] = {}
     for sample in price_samples:
         hour_start = sample.sampled_at.replace(minute=0, second=0, microsecond=0)
-        by_hour.setdefault(hour_start, []).append(float(sample.price_usd))
+        by_hour.setdefault(hour_start, []).append(float(sample.price_chf))
 
     return [
         HourlyMetric(
@@ -234,7 +234,7 @@ def run_simulation(
             continue
 
         step_count += 1
-        current_price = price_samples[sample_end - 1].price_usd
+        current_price = price_samples[sample_end - 1].price_chf
         
         # Compute trend from recent price history
         max_window_hours = max(
@@ -373,7 +373,7 @@ def run_simulation(
     total_sells = len([t for t in transactions if t[0] == "SELL"])
     
     # Compute unrealized PnL at end
-    final_price = price_samples[-1].price_usd
+    final_price = price_samples[-1].price_chf
     unrealized_pnl_at_end = _compute_unrealized_pnl(open_buys, final_price)
     
     total_return_pct = ((initial_wallet + realized_pnl_total + unrealized_pnl_at_end) / initial_wallet) * 100 - 100
@@ -423,8 +423,8 @@ def run_simulation(
     print(f"Simulation complete: {simulation_name}")
     print(f"  Total steps: {step_count}")
     print(f"  Buys: {total_buys}, Sells: {total_sells}")
-    print(f"  Realized PnL: {metrics.realized_pnl:.2f}")
-    print(f"  Unrealized PnL: {metrics.unrealized_pnl_at_end:.2f}")
+    print(f"  Realized PnL: CHF {metrics.realized_pnl:.2f}")
+    print(f"  Unrealized PnL: CHF {metrics.unrealized_pnl_at_end:.2f}")
     print(f"  Total return: {metrics.total_return_pct:.2f}%")
     print(f"  Win rate: {metrics.win_rate_pct:.1f}%")
     print(f"  Crash guard activations: {metrics.crash_guard_activations}")
