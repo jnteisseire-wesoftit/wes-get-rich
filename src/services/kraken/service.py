@@ -108,6 +108,14 @@ class KrakenService:
 
         return balances
 
+    def fetch_fee_rate(self, pair: str = "XBTCHF") -> float:
+        result = self._request_private("/0/private/TradeVolume", {"pair": pair})
+        fees = result.get("fees") or {}
+        pair_fee = fees.get(pair) or next(iter(fees.values()), None)
+        if not pair_fee or "fee" not in pair_fee:
+            raise KrakenServiceError("Kraken fee tier response did not contain a fee")
+        return float(pair_fee["fee"]) / 100.0
+
     def place_market_order(
         self,
         *,

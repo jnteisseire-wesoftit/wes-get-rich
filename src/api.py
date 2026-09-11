@@ -219,6 +219,9 @@ class PortfolioMetricsResponse(BaseModel):
     expected_exit_fees_chf: float
     open_positions: list[OpenPositionMetrics]
     cash_balance_chf: float
+    live_btc_balance: float
+    live_btc_value_chf: float
+    total_portfolio_value_chf: float
 
 
 class SimulationParametersRequest(BaseModel):
@@ -360,6 +363,28 @@ def _extract_live_cash_balance(balances: dict[str, float]) -> float | None:
         if symbol in balances:
             return float(balances[symbol])
     return None
+
+
+def _extract_live_btc_balance(balances: dict[str, float]) -> float:
+    return float(balances.get("XXBT", balances.get("XBT", 0.0)))
+
+
+def _get_effective_exchange_fee_rate(settings: Settings) -> float:
+    try:
+        if settings.kraken_api_key and settings.kraken_api_secret:
+            return _build_kraken_service(settings).fetch_fee_rate(_kraken_pair(settings))
+    except (KrakenServiceError, AttributeError) as exc:
+        print(f"fee tier warning, using configured fallback: {exc}")
+    return settings.exchange_fee_rate
+
+
+def _compute_open_invested(rows: list[dict]) -> float:
+    return sum(
+        (float(row["quantity_btc"] or 0) * float(row["unit_price_usd"] or 0))
+        + float(row["fee_usd"] or 0)
+        for row in rows
+        if row["action"] == "BUY" and row["status"] == "OPEN"
+    )
 
 
 def _build_binance_service(settings: Settings) -> BinanceService:
@@ -650,6 +675,8 @@ def health() -> dict[str, str]:
 @app.on_event("startup")
 async def start_price_sampler() -> None:
     settings = Settings()
+    if getattr(settings, "auto_start_bot", False):
+        app.state.bot_task = asyncio.create_task(_bot_loop())
     if settings.kraken_api_key and settings.kraken_api_secret:
         app.state.kraken_trade_sync_task = asyncio.create_task(_sync_kraken_trades_on_startup())
     if settings.enable_price_sampler:
@@ -1257,6 +1284,7 @@ def portfolio_metrics(asset_symbol: str = Query(default="BTC")) -> PortfolioMetr
     normalized = _normalize_asset(asset_symbol)
     settings = Settings()
     conn = get_connection(settings.dsn)
+    exchange_fee_rate = _get_effective_exchange_fee_rate(settings)
     
     try:
         # Try Kraken first
@@ -1276,7 +1304,7 @@ def portfolio_metrics(asset_symbol: str = Query(default="BTC")) -> PortfolioMetr
 
     from .db import BuyPosition
 
-    total_invested = 0.0
+    total_invested = _compute_open_invested(rows)
     total_realized_profit = 0.0
     total_realized_loss = 0.0
     total_fees_paid = 0.0
@@ -1286,15 +1314,25 @@ def portfolio_metrics(asset_symbol: str = Query(default="BTC")) -> PortfolioMetr
     open_positions: list[OpenPositionMetrics] = []
     
     cash_balance_chf = _compute_cash_balance(rows)
+    live_btc_balance = 0.0
     try:
         live_balances = _build_kraken_service(settings).fetch_balances()
         live_cash_balance = _extract_live_cash_balance(live_balances)
         if live_cash_balance is not None:
             cash_balance_chf = live_cash_balance
+        live_btc_balance = _extract_live_btc_balance(live_balances)
     except KrakenServiceError:
         pass
 
     for row in rows:
+        total_fees_paid += float(row["fee_usd"] or 0)
+        if row["action"] == "SELL" and row["status"] == "CLOSED":
+            realized_pnl = float(row["realized_pnl_usd"] or 0)
+            if realized_pnl >= 0:
+                total_realized_profit += realized_pnl
+            else:
+                total_realized_loss += abs(realized_pnl)
+
         if row["action"] != "BUY":
             continue
 
@@ -1302,23 +1340,14 @@ def portfolio_metrics(asset_symbol: str = Query(default="BTC")) -> PortfolioMetr
         unit_price_usd = float(row["unit_price_usd"])
         fee_usd = float(row["fee_usd"])
         cost_basis = (quantity_btc * unit_price_usd) + fee_usd
-        total_invested += cost_basis
-        total_fees_paid += fee_usd
-
-        if row["status"] == "CLOSED":
-            realized_pnl = float(row["realized_pnl_usd"] or 0)
-            if realized_pnl >= 0:
-                total_realized_profit += realized_pnl
-            else:
-                total_realized_loss += abs(realized_pnl)
-        else:
+        if row["status"] != "CLOSED":
             position = BuyPosition(
                 id=row["id"],
                 quantity_btc=quantity_btc,
                 unit_price_usd=unit_price_usd,
                 fee_usd=fee_usd,
             )
-            fee_adj = calculate_fee_adjusted_pnl(position, current_price, settings.exchange_fee_rate)
+            fee_adj = calculate_fee_adjusted_pnl(position, current_price, exchange_fee_rate)
 
             current_value = quantity_btc * current_price
             gross_pnl = current_value - cost_basis
@@ -1347,7 +1376,7 @@ def portfolio_metrics(asset_symbol: str = Query(default="BTC")) -> PortfolioMetr
         asset_symbol=normalized,
         current_price_chf=current_price,
         generated_at=datetime.now(timezone.utc),
-        exchange_fee_rate=settings.exchange_fee_rate,
+        exchange_fee_rate=exchange_fee_rate,
         total_invested_chf=total_invested,
         total_realized_profit_chf=total_realized_profit,
         total_realized_loss_chf=total_realized_loss,
@@ -1357,6 +1386,9 @@ def portfolio_metrics(asset_symbol: str = Query(default="BTC")) -> PortfolioMetr
         expected_exit_fees_chf=expected_exit_fees,
         open_positions=open_positions,
         cash_balance_chf=cash_balance_chf,
+        live_btc_balance=live_btc_balance,
+        live_btc_value_chf=live_btc_balance * current_price,
+        total_portfolio_value_chf=cash_balance_chf + (live_btc_balance * current_price),
     )
 
 
@@ -1384,7 +1416,7 @@ def run_simulation_endpoint(payload: SimulationCreateRequest) -> SimulationMetri
             "trend_long_window_hours": payload.parameters.trend_long_window_hours,
             "bearish_exit_min_cycles": payload.parameters.bearish_exit_min_cycles,
             "enable_bearish_exit": payload.parameters.enable_bearish_exit,
-            "exchange_fee_rate": payload.parameters.exchange_fee_rate,
+            "exchange_fee_rate": _get_effective_exchange_fee_rate(settings),
         }
         
         metrics_dict = run_simulation(

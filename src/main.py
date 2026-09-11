@@ -14,6 +14,7 @@ from .db import (
     WalletSummary,
 )
 from .services.market.service import fetch_btc_price_chf
+from .services.kraken.service import KrakenService, KrakenServiceError
 from .strategy import (
     TrendSignal,
     Decision,
@@ -24,6 +25,72 @@ from .strategy import (
     find_reinvest_candidate,
     is_crash_guard_active,
 )
+
+
+def _compute_trading_wallet(
+    *,
+    live_cash_chf: float | None,
+    live_btc_quantity: float | None,
+    current_price_chf: float,
+    fallback_free_cash: float,
+    fallback_total_wallet: float,
+) -> tuple[float, float]:
+    if live_cash_chf is None or live_btc_quantity is None:
+        return fallback_free_cash, fallback_total_wallet
+    return live_cash_chf, live_cash_chf + (live_btc_quantity * current_price_chf)
+
+
+def _get_live_wallet(settings: Settings) -> tuple[float | None, float | None]:
+    api_key = getattr(settings, "kraken_api_key", "")
+    api_secret = getattr(settings, "kraken_api_secret", "")
+    if not api_key or not api_secret:
+        return None, None
+    try:
+        balances = KrakenService(
+            base_url=getattr(settings, "kraken_base_url", "https://api.kraken.com"),
+            api_key=api_key,
+            api_secret=api_secret,
+        ).fetch_balances()
+        cash = balances.get("CHF", balances.get("ZCHF"))
+        btc = balances.get("XXBT", balances.get("XBT", 0.0))
+        return cash, btc
+    except KrakenServiceError as exc:
+        print(f"live wallet warning: {exc}")
+        return None, None
+
+
+def _get_exchange_fee_rate(settings: Settings) -> float:
+    if getattr(settings, "kraken_api_key", "") and getattr(settings, "kraken_api_secret", ""):
+        try:
+            return KrakenService(
+                base_url=getattr(settings, "kraken_base_url", "https://api.kraken.com"),
+                api_key=settings.kraken_api_key,
+                api_secret=settings.kraken_api_secret,
+            ).fetch_fee_rate(getattr(settings, "kraken_trading_pair", "XBTCHF"))
+        except KrakenServiceError as exc:
+            print(f"fee tier warning, using configured fallback: {exc}")
+    return settings.exchange_fee_rate
+
+
+def _execute_live_sell(settings: Settings, quantity_btc: float) -> bool:
+    if not getattr(settings, "live_trading_enabled", False):
+        return True
+
+    try:
+        KrakenService(
+            base_url=getattr(settings, "kraken_base_url", "https://api.kraken.com"),
+            api_key=getattr(settings, "kraken_api_key", ""),
+            api_secret=getattr(settings, "kraken_api_secret", ""),
+        ).place_market_order(
+            pair=getattr(settings, "kraken_trading_pair", "XBTCHF"),
+            side="SELL",
+            volume=quantity_btc,
+            validate_only=False,
+        )
+        return True
+    except KrakenServiceError as exc:
+        print(f"SELL skipped: live Kraken order failed: {exc}")
+        return False
 
 
 def run_cycle() -> None:
@@ -47,6 +114,7 @@ def run_cycle() -> None:
     try:
         # === STEP 1: Fetch current price and hourly metrics ===
         current_price = fetch_btc_price_chf()
+        exchange_fee_rate = _get_exchange_fee_rate(settings)
         hourly_metrics = get_hourly_metrics(
             conn,
             asset_symbol=settings.asset_symbol,
@@ -98,13 +166,15 @@ def run_cycle() -> None:
                     bearish_cycles=bearish_count,
                     bearish_exit_min_cycles=settings.bearish_exit_min_cycles,
                     enable_bearish_exit=getattr(settings, "enable_bearish_exit", False),
-                    exchange_fee_rate=settings.exchange_fee_rate,
+                    exchange_fee_rate=exchange_fee_rate,
                 )
 
                 if decision.decision == Decision.SELL:
                     # Execute sell
                     sell_notional = position.quantity_btc * current_price
-                    sell_fee = sell_notional * settings.exchange_fee_rate
+                    sell_fee = sell_notional * exchange_fee_rate
+                    if not _execute_live_sell(settings, position.quantity_btc):
+                        continue
                     sell_id = close_with_sell(
                         conn=conn,
                         buy_position=position,
@@ -164,12 +234,20 @@ def run_cycle() -> None:
 
         # === STEP 6: Compute wallet and buy budget ===
         wallet_summary = get_wallet_summary(conn, settings.asset_symbol)
-        free_cash, total_wallet = compute_wallet(
+        fallback_free_cash, fallback_total_wallet = compute_wallet(
             net_deposits=wallet_summary.net_deposits,
             realized_pnl=wallet_summary.realized_pnl,
             open_positions_cost_basis=wallet_summary.open_cost_basis,
             open_positions_current_value=sum(p.quantity_btc * current_price for p in open_positions) 
                 if open_positions else 0,
+        )
+        live_cash_chf, live_btc_quantity = _get_live_wallet(settings)
+        free_cash, total_wallet = _compute_trading_wallet(
+            live_cash_chf=live_cash_chf,
+            live_btc_quantity=live_btc_quantity,
+            current_price_chf=current_price,
+            fallback_free_cash=fallback_free_cash,
+            fallback_total_wallet=fallback_total_wallet,
         )
         
         buy_budget = total_wallet * settings.wallet_fraction_per_trade
@@ -180,20 +258,23 @@ def run_cycle() -> None:
         if free_cash >= buy_budget and buy_budget > 0:
             # Enough cash and positive budget: place BUY
             _place_buy(
-                conn, settings, current_price, buy_budget
+                conn, settings, current_price, buy_budget, exchange_fee_rate
             )
         else:
             # Not enough cash: try to find profitable position to reinvest
             reinvest_candidate = find_reinvest_candidate(
                 positions=open_positions,
                 current_price=current_price,
-                exchange_fee_rate=settings.exchange_fee_rate,
+                exchange_fee_rate=exchange_fee_rate,
             )
             
             if reinvest_candidate:
                 # Sell the candidate
                 sell_notional = reinvest_candidate.quantity_btc * current_price
-                sell_fee = sell_notional * settings.exchange_fee_rate
+                sell_fee = sell_notional * exchange_fee_rate
+                if not _execute_live_sell(settings, reinvest_candidate.quantity_btc):
+                    print("BUY skipped: live reinvestment sell failed")
+                    return
                 sell_id = close_with_sell(
                     conn=conn,
                     buy_position=reinvest_candidate,
@@ -207,7 +288,7 @@ def run_cycle() -> None:
                 
                 # Now place BUY
                 _place_buy(
-                    conn, settings, current_price, buy_budget
+                    conn, settings, current_price, buy_budget, exchange_fee_rate
                 )
             else:
                 print("BUY skipped: not enough free cash and no reinvest candidate")
@@ -223,9 +304,11 @@ def _place_buy(
     settings: Settings,
     current_price: float,
     buy_budget: float,
+    exchange_fee_rate: float | None = None,
 ) -> int:
     """Helper to place a buy order."""
-    buy_fee = buy_budget * settings.exchange_fee_rate
+    fee_rate = settings.exchange_fee_rate if exchange_fee_rate is None else exchange_fee_rate
+    buy_fee = buy_budget * fee_rate
     net_budget = buy_budget - buy_fee
     buy_quantity = net_budget / current_price
 

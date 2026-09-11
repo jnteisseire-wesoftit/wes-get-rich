@@ -304,9 +304,14 @@
             <div class="sub">Open buy cost basis (including fees)</div>
           </article>
           <article class="stat">
-            <div class="label">Current Holdings Value</div>
+            <div class="label">Live BTC Wallet Value</div>
             <div class="value" id="sum-value">CHF 0.00</div>
-            <div class="sub" id="sum-price-note">Based on current BTC/CHF</div>
+            <div class="sub" id="sum-price-note">Live Kraken BTC balance at current BTC/CHF</div>
+          </article>
+          <article class="stat">
+            <div class="label">Total Portfolio Value</div>
+            <div class="value" id="sum-total-value">CHF 0.00</div>
+            <div class="sub">Live CHF cash plus BTC wallet value</div>
           </article>
           <article class="stat">
             <div class="label">Available Cash to Invest</div>
@@ -359,6 +364,7 @@
     const sumInvestedEl = document.getElementById('sum-invested');
     const sumValueEl = document.getElementById('sum-value');
     const sumCashEl = document.getElementById('sum-cash');
+    const sumTotalValueEl = document.getElementById('sum-total-value');
     const sumPriceNoteEl = document.getElementById('sum-price-note');
     const botStateEl = document.getElementById('bot-state');
     const botToggleEl = document.getElementById('bot-toggle');
@@ -523,23 +529,15 @@
       let totalProfit = 0;
       let totalLoss = 0;
       let totalInvested = 0;
-      let totalCurrentValue = 0;
 
       for (const tx of items) {
         const unitPrice = quoteField(tx, 'unit_price_chf', 'unit_price_usd');
         const fee = quoteField(tx, 'fee_chf', 'fee_usd');
 
-        if (tx.action === 'BUY') {
+          if (tx.action === 'BUY' && tx.status === 'OPEN') {
           const costBasis = (tx.quantity_btc * unitPrice) + fee;
-          totalInvested += costBasis;
+            totalInvested += costBasis;
 
-          if (tx.status === 'OPEN') {
-            const marketValue = tx.quantity_btc * currentPrice;
-            totalCurrentValue += marketValue;
-          } else if (tx.status === 'CLOSED' && tx.paired_buy_transaction_id == null) {
-            // Closed BUY without matching SELL (shouldn't happen, but handle it)
-            totalCurrentValue += 0;
-          }
         } else if (tx.action === 'SELL' && tx.status === 'CLOSED') {
           const realizedPnl = quoteField(tx, 'realized_pnl_chf', 'realized_pnl_usd');
           if (realizedPnl > 0) {
@@ -553,12 +551,9 @@
       sumProfitEl.textContent = chf(totalProfit);
       sumLossEl.textContent = chf(totalLoss);
       sumInvestedEl.textContent = chf(totalInvested);
-      sumValueEl.textContent = chf(totalCurrentValue);
+      sumValueEl.textContent = chf(metrics.live_btc_value_chf);
       sumCashEl.textContent = chf(metrics.cash_balance_chf);
-      sumPriceNoteEl.innerHTML = `
-        Based on current BTC/CHF ${Number(currentPrice).toFixed(2)}<br>
-        <small style="color: var(--muted);">Current market value of all open positions</small>
-      `;
+      sumTotalValueEl.textContent = chf(metrics.total_portfolio_value_chf);
 
       txBody.innerHTML = '';
       for (const tx of items) {

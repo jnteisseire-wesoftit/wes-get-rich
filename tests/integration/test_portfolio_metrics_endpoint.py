@@ -73,25 +73,30 @@ def test_portfolio_metrics_endpoint(
 
     monkeypatch.setattr(api, "get_connection", lambda _dsn: dummy_conn)
     monkeypatch.setattr(api, "list_transactions", lambda *_args, **_kwargs: rows)
-    monkeypatch.setattr(api, "fetch_btc_price_usd", lambda: 68000.0)
+    class FakeKraken:
+        def fetch_spot_price_usd(self, pair: str) -> float:
+            return 68000.0
+
+        def fetch_balances(self) -> dict[str, float]:
+            return {"CHF": 0.0, "XXBT": 0.0}
+
+    monkeypatch.setattr(api, "_build_kraken_service", lambda _settings: FakeKraken())
 
     response = client.get("/portfolio/metrics?asset_symbol=BTC")
 
     assert response.status_code == 200
     payload = response.json()
     assert payload["asset_symbol"] == "BTC"
-    assert payload["current_price_usd"] == 68000.0
-    assert payload["exchange_fee_rate"] == 0.001
+    assert payload["current_price_chf"] == 68000.0
+    assert payload["exchange_fee_rate"] == 0.004
     
-    # total_invested = 67000 + 0.67 + 67500*2 + 1.35 = 202001.35
-    assert payload["total_invested_usd"] == pytest.approx(202001.02, abs=1)
+    assert payload["total_invested_chf"] == pytest.approx(136.35, abs=0.01)
     
     # Realized profit from closed trade = 200
-    assert payload["total_realized_profit_usd"] == 200.0
-    assert payload["total_realized_loss_usd"] == 0.0
+    assert payload["total_realized_profit_chf"] == 200.0
+    assert payload["total_realized_loss_chf"] == 0.0
     
-    # Fees paid = 0.67 + 0.70 + 1.35 = 2.72
-    assert payload["total_fees_paid_usd"] == pytest.approx(2.72, abs=0.01)
+    assert payload["total_fees_paid_chf"] == pytest.approx(2.72, abs=0.01)
     
     # Open position: 0.002 BTC at 68000 = 136 USD
     # Net PnL after exit fees = 136 - (67500*2 + 1.35) - 136*0.001

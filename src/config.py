@@ -42,6 +42,7 @@ class Settings:
     enable_price_sampler: bool = _to_bool(os.getenv("ENABLE_PRICE_SAMPLER", "true"), True)
     price_sample_interval_seconds: int = int(os.getenv("PRICE_SAMPLE_INTERVAL_SECONDS", "300"))
     bot_cycle_interval_seconds: int = int(os.getenv("BOT_CYCLE_INTERVAL_SECONDS", "300"))
+    auto_start_bot: bool = _to_bool(os.getenv("AUTO_START_BOT", "false"), False)
     strategy_history_source: str = os.getenv("STRATEGY_HISTORY_SOURCE", "db")
     strategy_metrics_window_hours: int = int(os.getenv("STRATEGY_METRICS_WINDOW_HOURS", "24"))
     kraken_history_lookback_days: int = int(os.getenv("KRAKEN_HISTORY_LOOKBACK_DAYS", "90"))

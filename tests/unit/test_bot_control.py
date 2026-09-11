@@ -69,3 +69,25 @@ def test_bot_control_http_endpoints(monkeypatch) -> None:
         assert client.post("/bot/start").json() == {"running": True}
         assert client.get("/bot/status").json() == {"running": True}
         assert client.post("/bot/pause").json() == {"running": False}
+
+
+def test_startup_auto_starts_bot(monkeypatch) -> None:
+    class FakeSettings:
+        auto_start_bot = True
+        kraken_api_key = ""
+        kraken_api_secret = ""
+        enable_price_sampler = False
+
+    async def idle_loop() -> None:
+        await asyncio.Event().wait()
+
+    monkeypatch.setattr(api, "Settings", lambda: FakeSettings())
+    monkeypatch.setattr(api, "_bot_loop", idle_loop)
+    api.app.state.bot_task = None
+
+    async def exercise_startup() -> None:
+        await api.start_price_sampler()
+        assert api.bot_status().running is True
+        await api.pause_bot()
+
+    asyncio.run(exercise_startup())

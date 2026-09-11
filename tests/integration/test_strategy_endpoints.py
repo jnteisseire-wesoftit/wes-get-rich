@@ -30,7 +30,7 @@ def test_strategy_history_db_source(
     assert payload["asset_symbol"] == "BTC"
     assert payload["source"] == "db"
     assert len(payload["samples"]) == 1
-    assert payload["samples"][0]["price_usd"] == 68000.5
+    assert payload["samples"][0]["price_chf"] == 68000.5
     assert dummy_conn.closed is True
 
 
@@ -71,8 +71,8 @@ def test_strategy_metrics_returns_hourly_aggregates(
     assert response.status_code == 200
     payload = response.json()
     assert payload["asset_symbol"] == "BTC"
-    assert payload["current_price_usd"] == 68300
-    assert payload["min_price_usd"] == 67500
-    assert payload["max_price_usd"] == 68400
+    assert payload["current_price_chf"] == 68300
+    assert payload["min_price_chf"] == 67500
+    assert payload["max_price_chf"] == 68400
     assert len(payload["hourly"]) == 2
     assert dummy_conn.closed is True

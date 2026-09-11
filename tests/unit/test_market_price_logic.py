@@ -5,12 +5,16 @@ from src import api
 
 
 def test_market_price_returns_btc_price(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(api, "fetch_btc_price_usd", lambda: 70250.11)
+    class FakeKraken:
+        def fetch_spot_price_usd(self, pair: str) -> float:
+            return 70250.11
+
+    monkeypatch.setattr(api, "_build_kraken_service", lambda _settings: FakeKraken())
 
     response = api.market_price("btc")
 
     assert response.asset_symbol == "BTC"
-    assert response.price_usd == 70250.11
+    assert response.price_chf == 70250.11
 
 
 def test_market_price_rejects_other_assets() -> None:

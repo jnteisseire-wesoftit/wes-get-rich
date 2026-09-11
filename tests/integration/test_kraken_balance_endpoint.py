@@ -15,6 +15,7 @@ class FailingKrakenService:
 
 def test_kraken_balance_endpoint_success(client: TestClient, monkeypatch) -> None:
     monkeypatch.setattr(api, "_build_kraken_service", lambda _settings: FakeKrakenService())
+    monkeypatch.setattr(api, "Settings", lambda: type("Settings", (), {"live_trading_enabled": False})())
 
     response = client.get("/kraken/balance")
 

@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 from src.strategy import TrendSignal, Decision, PositionDecision
+from src.main import _compute_trading_wallet
 
 
 class FakeSettings:
@@ -21,6 +22,29 @@ class FakeSettings:
     trend_short_window_hours = 6
     trend_long_window_hours = 24
     bearish_exit_min_cycles = 2
+
+
+def test_compute_trading_wallet_uses_live_cash_and_btc_value():
+    free_cash, total_wallet = _compute_trading_wallet(
+        live_cash_chf=142.05,
+        live_btc_quantity=0.00099258,
+        current_price_chf=62784.7,
+        fallback_free_cash=0.0,
+        fallback_total_wallet=0.0,
+    )
+
+    assert free_cash == pytest.approx(142.05)
+    assert total_wallet == pytest.approx(204.3688, rel=1e-4)
+
+
+def test_compute_trading_wallet_uses_local_fallback_without_live_balance():
+    assert _compute_trading_wallet(
+        live_cash_chf=None,
+        live_btc_quantity=None,
+        current_price_chf=100.0,
+        fallback_free_cash=20.0,
+        fallback_total_wallet=30.0,
+    ) == (20.0, 30.0)
 
 
 def test_run_cycle_skips_buy_when_trend_is_bearish():
@@ -215,4 +239,40 @@ def test_compute_wallet_called_with_correct_values():
                                                         
                                                         # Verify compute_wallet was called
                                                         mock_compute.assert_called_once()
+
+
+def test_live_sell_must_be_confirmed_before_local_close(monkeypatch):
+    from src.main import _execute_live_sell
+
+    class LiveSettings:
+        live_trading_enabled = True
+        kraken_api_key = "key"
+        kraken_api_secret = "secret"
+        kraken_base_url = "https://api.kraken.com"
+        kraken_trading_pair = "XBTCHF"
+
+    service = MagicMock()
+    service.place_market_order.return_value = {"txid": ["order-1"]}
+    monkeypatch.setattr("src.main.KrakenService", lambda **kwargs: service)
+
+    assert _execute_live_sell(LiveSettings(), 0.001) is True
+    service.place_market_order.assert_called_once()
+
+
+def test_live_sell_failure_does_not_close_local_position(monkeypatch):
+    from src.main import _execute_live_sell
+    from src.services.kraken.service import KrakenServiceError
+
+    class LiveSettings:
+        live_trading_enabled = True
+        kraken_api_key = "key"
+        kraken_api_secret = "secret"
+        kraken_base_url = "https://api.kraken.com"
+        kraken_trading_pair = "XBTCHF"
+
+    service = MagicMock()
+    service.place_market_order.side_effect = KrakenServiceError("rejected")
+    monkeypatch.setattr("src.main.KrakenService", lambda **kwargs: service)
+
+    assert _execute_live_sell(LiveSettings(), 0.001) is False
 
