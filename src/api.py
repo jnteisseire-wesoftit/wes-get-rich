@@ -235,7 +235,6 @@ class SimulationParametersRequest(BaseModel):
     trend_long_window_hours: int = Field(default=24, ge=1)
     bearish_exit_min_cycles: int = Field(default=2, ge=1)
     enable_bearish_exit: bool = False
-    exchange_fee_rate: float = Field(default=0.004, ge=0, le=0.1)
 
 
 class SimulationCreateRequest(BaseModel):

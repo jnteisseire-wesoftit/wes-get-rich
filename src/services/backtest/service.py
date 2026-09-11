@@ -115,7 +115,7 @@ def run_simulation(
         Dict with final metrics (total_buys, total_sells, realized_pnl, etc.)
     
     Raises:
-        ValueError: If simulation_name already exists or parameters are invalid
+        ValueError: If parameters are invalid
     """
     # Validate parameters
     required_params = [
@@ -134,14 +134,15 @@ def run_simulation(
         if param not in parameters:
             raise ValueError(f"Missing required parameter: {param}")
     
-    # Check if simulation already exists
+    # Replace an existing named run so the UI can rerun a simulation safely.
     with conn.cursor() as cur:
         cur.execute(
             "SELECT id FROM simulations WHERE name = %s",
             (simulation_name,),
         )
-        if cur.fetchone():
-            raise ValueError(f"Simulation with name '{simulation_name}' already exists")
+        existing = cur.fetchone()
+        if existing:
+            cur.execute("DELETE FROM simulations WHERE id = %s", (existing[0],))
     
     # Insert simulation record
     with conn.cursor() as cur:

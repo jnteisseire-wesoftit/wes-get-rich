@@ -276,3 +276,57 @@ def test_live_sell_failure_does_not_close_local_position(monkeypatch):
 
     assert _execute_live_sell(LiveSettings(), 0.001) is False
 
+
+def test_live_buy_must_be_confirmed_before_local_insert(monkeypatch):
+    from src.main import _execute_live_buy
+
+    class LiveSettings:
+        live_trading_enabled = True
+        kraken_api_key = "key"
+        kraken_api_secret = "secret"
+        kraken_base_url = "https://api.kraken.com"
+        kraken_trading_pair = "XBTCHF"
+
+    service = MagicMock()
+    service.place_market_order.return_value = {"txid": ["order-2"]}
+    monkeypatch.setattr("src.main.KrakenService", lambda **kwargs: service)
+
+    assert _execute_live_buy(LiveSettings(), 20.0) is True
+    service.place_market_order.assert_called_once()
+
+
+def test_live_buy_failure_does_not_create_local_transaction(monkeypatch):
+    from src.main import _execute_live_buy
+    from src.services.kraken.service import KrakenServiceError
+
+    class LiveSettings:
+        live_trading_enabled = True
+        kraken_api_key = "key"
+        kraken_api_secret = "secret"
+        kraken_base_url = "https://api.kraken.com"
+        kraken_trading_pair = "XBTCHF"
+
+    service = MagicMock()
+    service.place_market_order.side_effect = KrakenServiceError("rejected")
+    monkeypatch.setattr("src.main.KrakenService", lambda **kwargs: service)
+
+    assert _execute_live_buy(LiveSettings(), 20.0) is False
+
+
+def test_live_transactions_use_kraken_platform(monkeypatch):
+    from src.main import _transaction_platform
+
+    class Settings:
+        live_trading_enabled = True
+
+    assert _transaction_platform(Settings()) == "kraken"
+
+
+def test_paper_transactions_use_internal_bot_platform():
+    from src.main import _transaction_platform
+
+    class Settings:
+        live_trading_enabled = False
+
+    assert _transaction_platform(Settings()) == "internal-bot"
+

@@ -179,6 +179,28 @@ def test_run_simulation_handles_no_price_data(base_parameters):
         )
 
 
+def test_run_simulation_replaces_existing_named_run(base_parameters):
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+    mock_cursor.__exit__ = MagicMock(return_value=None)
+    mock_cursor.fetchone.side_effect = [(42,), (43,)]
+    mock_conn.cursor.return_value = mock_cursor
+
+    with pytest.raises(ValueError, match="No price samples found"):
+        run_simulation(
+            mock_conn,
+            "test",
+            "BTC",
+            datetime(2024, 1, 1),
+            datetime(2024, 1, 2),
+            10000.0,
+            base_parameters,
+        )
+
+    mock_cursor.execute.assert_any_call("DELETE FROM simulations WHERE id = %s", (42,))
+
+
 def test_run_simulation_simulations_table_structure():
     """Test that the simulation properly initializes simulation record."""
     # This is more of a documentation test showing expected behavior

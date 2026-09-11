@@ -412,62 +412,22 @@
               </label>
             </div>
 
-            <h3 style="margin-top: 24px; margin-bottom: 12px; font-size: 0.95rem;">Strategy Parameters</h3>
-
-            <div class="form-row">
-              <label>
-                Wallet Fraction Per Trade
-                <input type="number" id="wallet-fraction" value="0.10" step="0.01" min="0.01" max="1.0" required>
-              </label>
-              <label>
-                Max Open Positions
-                <input type="number" id="max-positions" value="10" step="1" min="1" required>
-              </label>
-            </div>
-
-            <div class="form-row">
-              <label>
-                Minutes Between Trades
-                <input type="number" id="min-minutes" value="2880" step="1" min="1" required>
-              </label>
-              <label>
-                Take Profit %
-                <input type="number" id="take-profit" value="7" step="0.1" min="0.1" required>
-              </label>
-            </div>
-
-            <div class="form-row">
-              <label>
-                Stop Loss %
-                <input type="number" id="stop-loss" value="-4.0" step="0.1" max="0" required>
-              </label>
-              <label>
-                Dynamic Stop Loss ATR Multiplier
-                <input type="number" id="atr-multiplier" value="2.0" step="0.1" min="0.1" required>
-              </label>
-            </div>
-
-            <div class="form-row">
-              <label>
-                Trend Short Window (hours)
-                <input type="number" id="trend-short" value="6" step="1" min="1" required>
-              </label>
-              <label>
-                Trend Long Window (hours)
-                <input type="number" id="trend-long" value="24" step="1" min="1" required>
-              </label>
-            </div>
-
-            <div class="form-row">
-              <label>
-                Bearish Exit Min Cycles
-                <input type="number" id="bearish-cycles" value="2" step="1" min="1" required>
-              </label>
-              <label>
-                Exchange Fee Rate
-                <input type="number" id="exchange-fee" value="0.001" step="0.0001" min="0" max="0.1" required>
-              </label>
-            </div>
+            <h3 style="margin-top: 24px; margin-bottom: 12px; font-size: 0.95rem;">Strategy Parameters (JSON)</h3>
+            <label>
+              Parameters
+              <textarea id="parameters-json" rows="14" spellcheck="false" required>{
+  "wallet_fraction_per_trade": 0.10,
+  "max_open_positions": 10,
+  "min_minutes_between_trades": 2880,
+  "take_profit_pct": 4.8,
+  "stop_loss_pct": -4.0,
+  "dynamic_stop_loss_atr_multiplier": 2.0,
+  "trend_short_window_hours": 6,
+  "trend_long_window_hours": 24,
+  "bearish_exit_min_cycles": 4,
+  "enable_bearish_exit": false
+}</textarea>
+            </label>
 
             <div style="margin-top: 20px;">
               <button type="submit" class="primary" id="submit-btn">▶ Run Simulation</button>
@@ -516,24 +476,25 @@
             submitBtn.disabled = true;
             statusSpan.textContent = 'Running...';
 
+            let parameters;
+            try {
+              parameters = JSON.parse(document.getElementById('parameters-json').value);
+              if (!parameters || Array.isArray(parameters) || typeof parameters !== 'object') {
+                throw new Error('Parameters must be a JSON object');
+              }
+            } catch (error) {
+              statusSpan.textContent = '✗ Invalid parameters JSON: ' + error.message;
+              submitBtn.disabled = false;
+              return;
+            }
+
             const payload = {
                 simulation_name: document.getElementById('sim-name').value,
                 asset_symbol: document.getElementById('asset-symbol').value,
                 start_at: document.getElementById('start-at').value + 'Z',
                 end_at: document.getElementById('end-at').value + 'Z',
                 initial_wallet: parseFloat(document.getElementById('initial-wallet').value),
-                parameters: {
-                    wallet_fraction_per_trade: parseFloat(document.getElementById('wallet-fraction').value),
-                    max_open_positions: parseInt(document.getElementById('max-positions').value),
-                    min_minutes_between_trades: parseInt(document.getElementById('min-minutes').value),
-                    take_profit_pct: parseFloat(document.getElementById('take-profit').value),
-                    stop_loss_pct: parseFloat(document.getElementById('stop-loss').value),
-                    dynamic_stop_loss_atr_multiplier: parseFloat(document.getElementById('atr-multiplier').value),
-                    trend_short_window_hours: parseInt(document.getElementById('trend-short').value),
-                    trend_long_window_hours: parseInt(document.getElementById('trend-long').value),
-                    bearish_exit_min_cycles: parseInt(document.getElementById('bearish-cycles').value),
-                    exchange_fee_rate: parseFloat(document.getElementById('exchange-fee').value),
-                }
+                parameters
             };
 
             try {

@@ -88,7 +88,7 @@ def test_portfolio_metrics_endpoint(
     payload = response.json()
     assert payload["asset_symbol"] == "BTC"
     assert payload["current_price_chf"] == 68000.0
-    assert payload["exchange_fee_rate"] == 0.004
+    assert payload["exchange_fee_rate"] == 0.008
     
     assert payload["total_invested_chf"] == pytest.approx(136.35, abs=0.01)
     

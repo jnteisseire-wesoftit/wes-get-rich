@@ -93,6 +93,32 @@ def _execute_live_sell(settings: Settings, quantity_btc: float) -> bool:
         return False
 
 
+def _execute_live_buy(settings: Settings, quote_amount_chf: float) -> bool:
+    if not getattr(settings, "live_trading_enabled", False):
+        return True
+
+    try:
+        KrakenService(
+            base_url=getattr(settings, "kraken_base_url", "https://api.kraken.com"),
+            api_key=getattr(settings, "kraken_api_key", ""),
+            api_secret=getattr(settings, "kraken_api_secret", ""),
+        ).place_market_order(
+            pair=getattr(settings, "kraken_trading_pair", "XBTCHF"),
+            side="BUY",
+            volume=0.0,
+            quote_volume=quote_amount_chf,
+            validate_only=False,
+        )
+        return True
+    except KrakenServiceError as exc:
+        print(f"BUY skipped: live Kraken order failed: {exc}")
+        return False
+
+
+def _transaction_platform(settings: Settings) -> str:
+    return "kraken" if getattr(settings, "live_trading_enabled", False) else "internal-bot"
+
+
 def run_cycle() -> None:
     """
     Execute one complete strategy cycle following exact order defined in AGENTS.md.
@@ -178,7 +204,7 @@ def run_cycle() -> None:
                     sell_id = close_with_sell(
                         conn=conn,
                         buy_position=position,
-                        platform_name="internal-bot",
+                        platform_name=_transaction_platform(settings),
                         asset_symbol=settings.asset_symbol,
                         sell_unit_price_usd=current_price,
                         sell_fee_usd=sell_fee,
@@ -257,6 +283,8 @@ def run_cycle() -> None:
         # === STEP 7: Execute buy or try reinvestment ===
         if free_cash >= buy_budget and buy_budget > 0:
             # Enough cash and positive budget: place BUY
+            if not _execute_live_buy(settings, buy_budget):
+                return
             _place_buy(
                 conn, settings, current_price, buy_budget, exchange_fee_rate
             )
@@ -278,7 +306,7 @@ def run_cycle() -> None:
                 sell_id = close_with_sell(
                     conn=conn,
                     buy_position=reinvest_candidate,
-                    platform_name="internal-bot",
+                    platform_name=_transaction_platform(settings),
                     asset_symbol=settings.asset_symbol,
                     sell_unit_price_usd=current_price,
                     sell_fee_usd=sell_fee,
@@ -287,6 +315,9 @@ def run_cycle() -> None:
                 print(f"Reinvest: sold buy_id={reinvest_candidate.id} for cash")
                 
                 # Now place BUY
+                if not _execute_live_buy(settings, buy_budget):
+                    print("BUY skipped: live reinvestment order failed")
+                    return
                 _place_buy(
                     conn, settings, current_price, buy_budget, exchange_fee_rate
                 )
@@ -314,7 +345,7 @@ def _place_buy(
 
     buy_id = insert_buy(
         conn=conn,
-        platform_name="internal-bot",
+        platform_name=_transaction_platform(settings),
         asset_symbol=settings.asset_symbol,
         quantity_btc=buy_quantity,
         unit_price_usd=current_price,
