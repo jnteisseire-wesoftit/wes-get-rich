@@ -7,6 +7,12 @@ from fastapi.testclient import TestClient
 from src import api
 
 
+class _MockKrakenService:
+    def fetch_spot_price_usd(self, pair: str) -> float:
+        assert pair == "XBTCHF"
+        return 68000.0
+
+
 def test_list_transactions_endpoint(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
@@ -36,6 +42,7 @@ def test_list_transactions_endpoint(
 
     monkeypatch.setattr(api, "get_connection", lambda _dsn: dummy_conn)
     monkeypatch.setattr(api, "list_transactions", lambda *_args, **_kwargs: rows)
+    monkeypatch.setattr(api, "_build_kraken_service", lambda _settings: _MockKrakenService())
 
     response = client.get("/transactions?limit=50")
 
@@ -45,5 +52,9 @@ def test_list_transactions_endpoint(
     assert body[0]["asset_symbol"] == "BTC"
     assert body[0]["quantity_btc"] == 0.0025
     assert body[0]["unit_price_usd"] == 67000.0
+    assert body[0]["unit_price_chf"] == 67000.0
     assert body[0]["fee_usd"] == 1.5
+    assert body[0]["fee_chf"] == 1.5
+    assert body[0]["profitability_status"] == "PROFIT"
+    assert body[0]["profitability_color"] == "green"
     assert dummy_conn.closed is True

@@ -9,8 +9,9 @@ This repository gives you:
 - Decision logic for `SELL`, `HOLD`, or `WATCH` based on take-profit and stop-loss thresholds.
 - A Dockerized database image that initializes the required tables automatically.
 - A FastAPI backend (`:2512`) with transaction create/list APIs.
-- A Node.js frontend (`:2513`) with Transactions and Strategy pages.
+- A Node.js frontend (`:2513`) with Transactions, Strategy, and Simulations pages.
 - 5-minute BTC price sampling persisted in Postgres for strategy history.
+- A dashboard play/pause control for the trading bot; the bot starts paused.
 
 ## Project Structure
 
@@ -44,14 +45,15 @@ This repository gives you:
 
 ## How It Works
 
-1. The app fetches current BTC/USD price from CoinGecko.
-2. It records a `BUY` transaction for your configured dollar amount.
-3. It reviews open buy positions and computes change percentage.
-4. If change exceeds thresholds:
+1. The app fetches current BTC/CHF price from **Kraken** (with CoinGecko as fallback).
+2. Historical price data is backfilled from Kraken's public OHLC API.
+3. It records a `BUY` transaction using the configured wallet fraction.
+4. It reviews open buy positions and computes change percentage.
+5. If change exceeds thresholds:
    - `SELL` when gain >= take profit
    - `SELL` when loss <= stop loss
    - otherwise `HOLD`
-5. Sell transactions are linked back to original buy transactions and store realized PnL.
+6. Sell transactions are linked back to original buy transactions and store realized PnL.
 
 ## Prerequisites
 
@@ -90,21 +92,50 @@ DB_PASSWORD=investor
 
 ASSET_SYMBOL=BTC
 BUY_BUDGET_USD=50
-EXCHANGE_FEE_RATE=0.001
-TAKE_PROFIT_PCT=5
-STOP_LOSS_PCT=-3
+EXCHANGE_FEE_RATE=0.004
+TAKE_PROFIT_PCT=7
+STOP_LOSS_PCT=-4
+WALLET_FRACTION_PER_TRADE=0.10
+MAX_OPEN_POSITIONS=10
+MIN_MINUTES_BETWEEN_TRADES=2880
+DYNAMIC_STOP_LOSS_ATR_MULTIPLIER=2.0
+TREND_SHORT_WINDOW_HOURS=6
+TREND_LONG_WINDOW_HOURS=24
+BEARISH_EXIT_MIN_CYCLES=4
+ENABLE_BEARISH_EXIT=false
+BUY_ENTRY_DISCOUNT_PCT=1.0
 STRATEGY_TAG=dca-v1
 ENABLE_PRICE_SAMPLER=true
 PRICE_SAMPLE_INTERVAL_SECONDS=300
+BOT_CYCLE_INTERVAL_SECONDS=300
 STRATEGY_HISTORY_SOURCE=db
 STRATEGY_METRICS_WINDOW_HOURS=24
+KRAKEN_HISTORY_LOOKBACK_DAYS=90
+KRAKEN_HISTORY_INTERVAL_MINUTES=5
+LIVE_TRADING_ENABLED=false
 
 BINANCE_BASE_URL=https://api.binance.com
 BINANCE_API_KEY=your_api_key
 BINANCE_API_SECRET=your_api_secret
 
 KRAKEN_BASE_URL=https://api.kraken.com
+KRAKEN_TRADING_PAIR=XBTCHF
+KRAKEN_API_KEY=your_kraken_api_key
+KRAKEN_API_SECRET=your_kraken_api_secret
 ```
+
+`LIVE_TRADING_ENABLED` is a safety guard and should stay `false` until you explicitly enable real order placement logic.
+`BUY_ENTRY_DISCOUNT_PCT` controls how far below the recent average price BTC must be before the bot opens a new buy.
+With `KRAKEN_TRADING_PAIR=XBTCHF`, the Kraken live order endpoint spends CHF balance instead of USD balance.
+
+At startup, the backend synchronizes Kraken trade history idempotently when private API credentials are configured.
+It continuously syncs Kraken OHLC history into `price_samples` at 5-minute cadence.
+It backfills from the latest stored candle, or from the last 90 days when DB is empty.
+
+The dashboard's **Available Cash to Invest** uses the live Kraken CHF balance when the API key has
+the `Query Funds` permission. If that private endpoint is unavailable, it falls back to the local
+transaction ledger. **Current Holdings Value** is the market value of open BTC positions and does not
+include cash.
 
 ## 3) Install Dependencies
 
@@ -178,6 +209,45 @@ Get Binance spot price:
 curl "http://localhost:2512/binance/price?symbol=BTCUSDT"
 ```
 
+Get Kraken account balances (requires Kraken API key/secret):
+
+```bash
+curl "http://localhost:2512/kraken/balance"
+```
+
+Synchronize Kraken trade history into the local transaction ledger:
+
+```bash
+curl -X POST "http://localhost:2512/kraken/sync-trades"
+```
+
+Control the dashboard-managed trading bot:
+
+```bash
+curl "http://localhost:2512/bot/status"
+curl -X POST "http://localhost:2512/bot/start"
+curl -X POST "http://localhost:2512/bot/pause"
+```
+
+The bot is paused by default. Starting it runs strategy cycles at `BOT_CYCLE_INTERVAL_SECONDS`.
+Bearish exits are disabled by default; set `ENABLE_BEARISH_EXIT=true` to opt into them.
+
+Place a Kraken market order:
+
+```bash
+curl -X POST http://localhost:2512/kraken/order \
+	-H "Content-Type: application/json" \
+	-d '{
+		"side": "BUY",
+		"quote_order_qty": 10,
+		"validate_only": true,
+		"persist_transaction": false
+	}'
+```
+
+Set `validate_only=false` only after you are confident with the API key permissions and you want a real order to be sent. Keep `LIVE_TRADING_ENABLED=true` to allow the live path.
+For `XBTCHF`, `quote_order_qty` is interpreted as CHF.
+
 Place Binance market order (test order by default):
 
 ```bash
@@ -231,6 +301,8 @@ The page lets you:
 - Create a new transaction record
 - View past transactions in a table
 - Open `/strategy` to view hourly metrics and 5-minute BTC sample history
+- Open `/simulations` to run and inspect historical backtests
+- Start or pause the trading bot from the dashboard
 
 ## 6) Optional: Run One Invest Cycle Manually
 
@@ -260,6 +332,9 @@ For existing databases created before this change, apply the migration in:
 
 ## Notes
 
-- This starter performs paper-trade style recording logic and does not place live exchange orders.
+- Simulation PnL includes both buy and sell fees.
+- Backtest trades are stored in `simulation_transactions`, separate from live/paper `transactions`.
+- The dashboard cash metric represents buying power, while holdings value is displayed separately.
+- This starter performs paper-trade style recording logic by default; live exchange orders require explicit configuration.
 - Replace the pricing and execution layers before connecting to real money accounts.
 - Add authentication, auditing, and secrets management for production.

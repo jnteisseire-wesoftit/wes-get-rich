@@ -1,0 +1,918 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wes Get Rich - Simulations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f4f7f1;
+      --surface: #ffffff;
+      --ink: #172214;
+      --muted: #5c6858;
+      --accent: #0d7a54;
+      --accent-2: #f1c84b;
+      --danger: #c03d3d;
+      --border: #d4dfcf;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Space Grotesk", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 90% 10%, #d7f1cc 0%, transparent 35%),
+        radial-gradient(circle at 10% 90%, #f5e9bb 0%, transparent 30%),
+        var(--bg);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 1.35rem;
+    }
+
+    .nav {
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav a {
+      text-decoration: none;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      color: var(--ink);
+      background: #ffffff;
+      font-weight: 600;
+    }
+
+    .nav a.active {
+      background: #dff2e8;
+      border-color: #b8d9c8;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(23, 34, 20, 0.08);
+      overflow: hidden;
+    }
+
+    .card h2 {
+      margin: 0;
+      padding: 16px 18px;
+      background: linear-gradient(90deg, #e7f4df, #fff7d7);
+      border-bottom: 1px solid var(--border);
+      font-size: 1.05rem;
+    }
+
+    .content { 
+      padding: 16px 18px 20px; 
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .form-row.full {
+      grid-template-columns: 1fr;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    input, select, textarea {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(13, 122, 84, 0.1);
+    }
+
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .primary { background: var(--accent); }
+    .danger { background: var(--danger); }
+
+    .simulations-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .sim-card {
+      background: linear-gradient(160deg, #ffffff, #f7faf5);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .sim-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(23, 34, 20, 0.1);
+    }
+
+    .sim-card h3 {
+      margin: 0 0 12px 0;
+      font-size: 1rem;
+      color: var(--ink);
+    }
+
+    .sim-stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .sim-stat-value {
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .stat-positive { color: #059669; }
+    .stat-negative { color: var(--danger); }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .metric-box {
+      background: linear-gradient(160deg, #ffffff, #f7faf5);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-bottom: 6px;
+    }
+
+    .metric-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .transactions-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      margin-top: 16px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      background: #f7faf5;
+    }
+
+    tr:hover {
+      background: #fafaf8;
+    }
+
+    .trigger-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .trigger-TREND_BUY { background: #dbeafe; color: #1e40af; }
+    .trigger-TAKE_PROFIT { background: #dcfce7; color: #166534; }
+    .trigger-STOP_LOSS { background: #fed7aa; color: #92400e; }
+    .trigger-BEARISH_EXIT { background: #fce7f3; color: #831843; }
+    .trigger-CRASH_GUARD_BLOCK { background: #e9d5ff; color: #5b21b6; }
+    .trigger-REINVEST { background: #cffafe; color: #164e63; }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .back-button {
+      background: #dff2e8;
+      color: var(--ink);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .back-button:hover {
+      background: rgba(13, 122, 84, 0.1);
+    }
+
+    .delete-button {
+      background: var(--danger);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .delete-button:hover {
+      opacity: 0.9;
+    }
+
+    .delete-button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+    }
+
+    .loading::after {
+      content: '';
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top: 2px solid var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-left: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+    }
+
+    .stats-summary {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .stats-summary h3 {
+      margin-bottom: 12px;
+      font-size: 0.95rem;
+    }
+
+    pre {
+      background: #f7faf5;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      overflow-x: auto;
+      font-size: 0.8rem;
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+      .form-row { grid-template-columns: 1fr; }
+      .simulations-grid { grid-template-columns: 1fr; }
+      .metrics-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="topbar">
+      <h1>Wes Get Rich Dashboard</h1>
+      <nav class="nav" aria-label="Main navigation">
+        <a href="/transactions">Transactions</a>
+        <a href="/strategy">Strategy</a>
+        <a href="/simulations" class="active">Simulations</a>
+      </nav>
+    </section>
+
+    <div id="main-view">
+      <!-- Run Simulation Form -->
+      <section class="card">
+        <h2>Run New Simulation</h2>
+        <div class="content">
+          <form id="simulation-form" onsubmit="submitSimulation(event)">
+            <div class="form-row">
+              <label>
+                Simulation Name
+                <input type="text" id="sim-name" placeholder="e.g., trend-test-1" required>
+              </label>
+              <label>
+                Asset Symbol
+                <select id="asset-symbol" required>
+                  <option value="BTC" selected>Bitcoin (BTC)</option>
+                  <option value="ETH">Ethereum (ETH)</option>
+                  <option value="SOL">Solana (SOL)</option>
+                </select>
+              </label>
+            </div>
+
+            <div id="data-availability-info" style="margin-top: 4px;"></div>
+
+            <div class="form-row">
+              <label>
+                Start Date
+                <input type="datetime-local" id="start-at" required>
+              </label>
+              <label>
+                End Date
+                <input type="datetime-local" id="end-at" required>
+              </label>
+            </div>
+
+            <div class="form-row full">
+              <label>
+                Initial Wallet (USD)
+                <input type="number" id="initial-wallet" value="200" step="100" min="100" required>
+              </label>
+            </div>
+
+            <h3 style="margin-top: 24px; margin-bottom: 12px; font-size: 0.95rem;">Strategy Parameters</h3>
+
+            <div class="form-row">
+              <label>
+                Wallet Fraction Per Trade
+                <input type="number" id="wallet-fraction" value="0.10" step="0.01" min="0.01" max="1.0" required>
+              </label>
+              <label>
+                Max Open Positions
+                <input type="number" id="max-positions" value="10" step="1" min="1" required>
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label>
+                Minutes Between Trades
+                <input type="number" id="min-minutes" value="1440" step="1" min="1" required>
+              </label>
+              <label>
+                Take Profit %
+                <input type="number" id="take-profit" value="2" step="0.1" min="0.1" required>
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label>
+                Stop Loss %
+                <input type="number" id="stop-loss" value="-3.0" step="0.1" max="0" required>
+              </label>
+              <label>
+                Dynamic Stop Loss ATR Multiplier
+                <input type="number" id="atr-multiplier" value="1.5" step="0.1" min="0.1" required>
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label>
+                Trend Short Window (hours)
+                <input type="number" id="trend-short" value="6" step="1" min="1" required>
+              </label>
+              <label>
+                Trend Long Window (hours)
+                <input type="number" id="trend-long" value="24" step="1" min="1" required>
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label>
+                Bearish Exit Min Cycles
+                <input type="number" id="bearish-cycles" value="2" step="1" min="1" required>
+              </label>
+              <label>
+                Exchange Fee Rate
+                <input type="number" id="exchange-fee" value="0.001" step="0.0001" min="0" max="0.1" required>
+              </label>
+            </div>
+
+            <div style="margin-top: 20px;">
+              <button type="submit" class="primary" id="submit-btn">▶ Run Simulation</button>
+              <span id="submit-status" style="margin-left: 12px; color: var(--muted);"></span>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Results Grid -->
+      <section class="card">
+        <h2>Simulations</h2>
+        <div class="content">
+          <div id="simulations-container" class="simulations-grid">
+            <div class="loading">Loading simulations...</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Simulation Details View -->
+    <div id="simulation-view" style="display: none;">
+      <section class="card">
+        <h2>Simulation Details</h2>
+        <div class="content">
+          <div class="controls">
+            <button class="back-button" onclick="backToList()">← Back to Simulations</button>
+            <button id="delete-sim-btn" class="delete-button" onclick="deleteSimulation()">🗑 Delete Simulation</button>
+          </div>
+          <div id="simulation-details"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+    <script>
+        // Use the same hostname/IP that the user is accessing from
+        const API_BASE = `http://${window.location.hostname}:2512`;
+        let currentSimulationId = null;
+
+        async function submitSimulation(e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submit-btn');
+            const statusSpan = document.getElementById('submit-status');
+            submitBtn.disabled = true;
+            statusSpan.textContent = 'Running...';
+
+            const payload = {
+                simulation_name: document.getElementById('sim-name').value,
+                asset_symbol: document.getElementById('asset-symbol').value,
+                start_at: document.getElementById('start-at').value + 'Z',
+                end_at: document.getElementById('end-at').value + 'Z',
+                initial_wallet: parseFloat(document.getElementById('initial-wallet').value),
+                parameters: {
+                    wallet_fraction_per_trade: parseFloat(document.getElementById('wallet-fraction').value),
+                    max_open_positions: parseInt(document.getElementById('max-positions').value),
+                    min_minutes_between_trades: parseInt(document.getElementById('min-minutes').value),
+                    take_profit_pct: parseFloat(document.getElementById('take-profit').value),
+                    stop_loss_pct: parseFloat(document.getElementById('stop-loss').value),
+                    dynamic_stop_loss_atr_multiplier: parseFloat(document.getElementById('atr-multiplier').value),
+                    trend_short_window_hours: parseInt(document.getElementById('trend-short').value),
+                    trend_long_window_hours: parseInt(document.getElementById('trend-long').value),
+                    bearish_exit_min_cycles: parseInt(document.getElementById('bearish-cycles').value),
+                    exchange_fee_rate: parseFloat(document.getElementById('exchange-fee').value),
+                }
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/simulations`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || 'Failed to run simulation');
+                }
+
+                statusSpan.textContent = '✓ Simulation completed!';
+                setTimeout(() => { loadSimulations(); }, 500);
+                document.getElementById('simulation-form').reset();
+                initializeDefaultDates();
+            } catch (error) {
+                statusSpan.textContent = '✗ ' + error.message;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
+
+        async function loadSimulations() {
+            const container = document.getElementById('simulations-container');
+            container.innerHTML = '<div class="loading">Loading simulations...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/simulations`);
+                if (!response.ok) throw new Error('Failed to load simulations');
+
+                const simulations = await response.json();
+
+                if (simulations.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No simulations yet. Create one to get started!</div>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                simulations.forEach(sim => {
+                    const card = document.createElement('div');
+                    card.className = 'sim-card';
+                    card.onclick = () => viewSimulation(sim.simulation_id);
+
+                    const returnClass = sim.total_return_pct >= 0 ? 'stat-positive' : 'stat-negative';
+                    const winRateClass = sim.win_rate_pct >= 50 ? 'stat-positive' : 'stat-negative';
+
+                    card.innerHTML = `
+                        <h3>${sim.name}</h3>
+                        <div class="sim-stat">
+                            <span>${sim.asset_symbol}</span>
+                            <span class="sim-stat-value">${new Date(sim.start_at).toLocaleDateString()}</span>
+                        </div>
+                        <div class="sim-stat">
+                            <span>Initial Wallet</span>
+                            <span class="sim-stat-value">$${sim.initial_wallet.toLocaleString()}</span>
+                        </div>
+                        <div class="sim-stat">
+                            <span>Total Return</span>
+                            <span class="sim-stat-value ${returnClass}">${sim.total_return_pct.toFixed(2)}%</span>
+                        </div>
+                        <div class="sim-stat">
+                            <span>Win Rate</span>
+                            <span class="sim-stat-value ${winRateClass}">${sim.win_rate_pct.toFixed(1)}%</span>
+                        </div>
+                        <div class="sim-stat">
+                            <span>Crash Guard Hits</span>
+                            <span class="sim-stat-value">${sim.crash_guard_activations}</span>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (error) {
+                container.innerHTML = `<div class="empty-state">Error loading: ${error.message}</div>`;
+            }
+        }
+
+        async function viewSimulation(simId) {
+            const mainView = document.getElementById('main-view');
+            const simView = document.getElementById('simulation-view');
+            const detailsEl = document.getElementById('simulation-details');
+
+            mainView.style.display = 'none';
+            simView.style.display = 'block';
+            currentSimulationId = simId;
+            detailsEl.innerHTML = '<div class="loading">Loading simulation details...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/simulations/${simId}`);
+                if (!response.ok) throw new Error('Failed to load simulation');
+
+                const sim = await response.json();
+
+                const returnClass = sim.metrics.total_return_pct >= 0 ? 'stat-positive' : 'stat-negative';
+                const winRateClass = sim.metrics.win_rate_pct >= 50 ? 'stat-positive' : 'stat-negative';
+
+                let html = `
+                    <div class="metrics-grid">
+                        <div class="metric-box">
+                            <div class="metric-label">Simulation</div>
+                            <div class="metric-value">${sim.name}</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-label">Asset</div>
+                            <div class="metric-value">${sim.asset_symbol}</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-label">Initial Wallet</div>
+                            <div class="metric-value">$${sim.initial_wallet.toLocaleString()}</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-label">Total Return</div>
+                            <div class="metric-value ${returnClass}">${sim.metrics.total_return_pct.toFixed(2)}%</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-label">Realized P&L</div>
+                            <div class="metric-value ${sim.metrics.realized_pnl >= 0 ? 'stat-positive' : 'stat-negative'}">
+                                $${sim.metrics.realized_pnl.toLocaleString('en-US', {maximumFractionDigits: 2})}
+                            </div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-label">Win Rate</div>
+                            <div class="metric-value ${winRateClass}">${sim.metrics.win_rate_pct.toFixed(1)}%</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-label">Total Buys</div>
+                            <div class="metric-value">${sim.metrics.total_buys}</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-label">Total Sells</div>
+                            <div class="metric-value">${sim.metrics.total_sells}</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-label">Crash Guard Hits</div>
+                            <div class="metric-value">${sim.metrics.crash_guard_activations}</div>
+                        </div>
+                    </div>
+
+                    <div class="stats-summary">
+                        <h3>Strategy Parameters</h3>
+                        <pre>${JSON.stringify(sim.parameters, null, 2)}</pre>
+                    </div>
+
+                    <div class="stats-summary">
+                        <h3>Transactions (${sim.transactions.length})</h3>
+                        <div style="overflow-x: auto;">
+                            <table class="transactions-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Time</th>
+                                        <th>Action</th>
+                                        <th>Quantity</th>
+                                        <th>Price</th>
+                                        <th>Fee</th>
+                                        <th>Trigger Rule</th>
+                                        <th>P&L</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+`;
+
+                sim.transactions.forEach((tx, idx) => {
+                    const pnlClass = tx.realized_pnl === null ? '' : (tx.realized_pnl >= 0 ? 'stat-positive' : 'stat-negative');
+                    const pnlText = tx.realized_pnl === null ? '-' : `$${tx.realized_pnl.toFixed(2)}`;
+                    const triggerClass = `trigger-${tx.trigger_rule.replace(/ /g, '_')}`;
+
+                    html += `
+                        <tr>
+                            <td>${idx + 1}</td>
+                            <td>${new Date(tx.simulated_at).toLocaleString('en-US', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})}</td>
+                            <td><strong>${tx.action}</strong></td>
+                            <td>${tx.quantity.toFixed(6)}</td>
+                            <td>$${tx.unit_price.toFixed(2)}</td>
+                            <td>$${tx.fee.toFixed(4)}</td>
+                            <td><span class="trigger-badge ${triggerClass}">${tx.trigger_rule}</span></td>
+                            <td class="${pnlClass}">${pnlText}</td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+
+                detailsEl.innerHTML = html;
+            } catch (error) {
+                detailsEl.innerHTML = `<div class="empty-state">Error loading details: ${error.message}</div>`;
+            }
+        }
+
+        function backToList() {
+            document.getElementById('main-view').style.display = 'block';
+            document.getElementById('simulation-view').style.display = 'none';
+            currentSimulationId = null;
+            // Reset delete button state
+            const deleteBtn = document.getElementById('delete-sim-btn');
+            if (deleteBtn) {
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = '🗑 Delete Simulation';
+            }
+        }
+
+        async function deleteSimulation() {
+            if (!currentSimulationId) {
+                alert('No simulation selected');
+                return;
+            }
+
+            const deleteBtn = document.getElementById('delete-sim-btn');
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = '🗑 Deleting...';
+
+            try {
+                const response = await fetch(`${API_BASE}/simulations/${currentSimulationId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to delete simulation');
+                }
+
+                backToList();
+                loadSimulations();
+            } catch (error) {
+                alert(`✗ Error deleting simulation: ${error.message}`);
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = '🗑 Delete Simulation';
+            }
+        }
+
+        // Initialize default date values
+        function initializeDefaultDates() {
+            const today = new Date();
+            const janFirst = new Date(today.getFullYear(), 0, 1);
+            
+            document.getElementById('start-at').value = janFirst.toISOString().slice(0, 16);
+            document.getElementById('end-at').value = today.toISOString().slice(0, 16);
+        }
+
+        // Field validation configuration
+        const fieldDefaults = {
+            'sim-name': { default: '', required: true },
+            'asset-symbol': { default: 'BTC', required: true },
+            'start-at': { default: '', required: true },
+            'end-at': { default: '', required: true },
+            'initial-wallet': { default: 200, min: 100, max: null, type: 'number' },
+            'wallet-fraction': { default: 0.10, min: 0.01, max: 1.0, type: 'number' },
+            'max-positions': { default: 10, min: 1, max: null, type: 'number' },
+            'min-minutes': { default: 1440, min: 1, max: null, type: 'number' },
+            'take-profit': { default: 2, min: 0.1, max: null, type: 'number' },
+            'stop-loss': { default: -2.0, min: null, max: 0, type: 'number' },
+            'atr-multiplier': { default: 1.5, min: 0.1, max: null, type: 'number' },
+            'trend-short': { default: 6, min: 1, max: null, type: 'number' },
+            'trend-long': { default: 24, min: 1, max: null, type: 'number' },
+            'bearish-cycles': { default: 2, min: 1, max: null, type: 'number' },
+            'exchange-fee': { default: 0.001, min: 0, max: 0.1, type: 'number' },
+        };
+
+        // Validate and correct field value on blur
+        function validateField(fieldId) {
+            const field = document.getElementById(fieldId);
+            if (!field) return;
+
+            const config = fieldDefaults[fieldId];
+            if (!config) return;
+
+            let value = field.value.trim();
+
+            // For text fields, set to default if empty
+            if (config.required && !value) {
+                field.value = config.default;
+                return;
+            }
+
+            // For number fields, validate range
+            if (config.type === 'number') {
+                let numValue = value === '' ? config.default : parseFloat(value);
+                
+                if (isNaN(numValue)) {
+                    numValue = config.default;
+                }
+                
+                // Clamp to min/max
+                if (config.min !== null && numValue < config.min) {
+                    numValue = config.min;
+                }
+                if (config.max !== null && numValue > config.max) {
+                    numValue = config.max;
+                }
+                
+                field.value = numValue;
+            }
+        }
+
+        // Attach blur handlers to all form fields
+        function attachValidationHandlers() {
+            Object.keys(fieldDefaults).forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('blur', () => validateField(fieldId));
+                }
+            });
+        }
+
+        // Fetch and apply data availability constraints for selected asset
+        async function updateDataAvailability() {
+            const assetSymbol = document.getElementById('asset-symbol').value;
+            const startField = document.getElementById('start-at');
+            const endField = document.getElementById('end-at');
+            const availabilityInfo = document.getElementById('data-availability-info');
+            
+            if (!availabilityInfo) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/data-availability/${assetSymbol}`);
+                if (!response.ok) {
+                    availabilityInfo.innerHTML = `<div class="empty-state" style="color: var(--danger); padding: 12px; margin-top: 8px;">⚠ No historical data available for ${assetSymbol}</div>`;
+                    startField.min = '';
+                    endField.max = '';
+                    return;
+                }
+
+                const data = await response.json();
+                const firstDate = new Date(data.first_available).toISOString().slice(0, 16);
+                const lastDate = new Date(data.last_available).toISOString().slice(0, 16);
+                
+                // Update date constraints
+                startField.min = firstDate;
+                endField.max = lastDate;
+                
+                // If current start is before first available, adjust it
+                if (startField.value && startField.value < firstDate) {
+                    startField.value = firstDate;
+                }
+                
+                // If current end is after last available, adjust it
+                if (endField.value && endField.value > lastDate) {
+                    endField.value = lastDate;
+                }
+                
+                const firstDateObj = new Date(data.first_available);
+                const lastDateObj = new Date(data.last_available);
+                const daysDiff = Math.floor((lastDateObj - firstDateObj) / (1000 * 60 * 60 * 24));
+                
+                availabilityInfo.innerHTML = `
+                    <div style="background: #e7f4df; border-left: 4px solid var(--accent); padding: 12px; margin-top: 8px; border-radius: 4px; font-size: 0.9rem;">
+                        ✓ Data available from <strong>${firstDateObj.toLocaleDateString()}</strong> to <strong>${lastDateObj.toLocaleDateString()}</strong> (${daysDiff} days, ${data.total_records} records)
+                    </div>
+                `;
+            } catch (error) {
+                availabilityInfo.innerHTML = `<div class="empty-state" style="color: var(--danger); padding: 12px; margin-top: 8px;">Error loading data availability: ${error.message}</div>`;
+                startField.min = '';
+                endField.max = '';
+            }
+        }
+
+        // Load simulations on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeDefaultDates();
+            attachValidationHandlers();
+            
+            // Attach asset change handler and fetch initial availability
+            const assetSelect = document.getElementById('asset-symbol');
+            if (assetSelect) {
+                assetSelect.addEventListener('change', updateDataAvailability);
+                // Fetch initial data availability for default asset (BTC)
+                updateDataAvailability();
+            }
+            
+            loadSimulations();
+        });
+    </script>
+</body>
+</html>

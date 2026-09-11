@@ -55,6 +55,31 @@
       font-size: 1.35rem;
     }
 
+    .bot-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .bot-state {
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    .bot-state.running { color: var(--accent); }
+
+    .bot-toggle {
+      min-width: 124px;
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .bot-toggle.paused {
+      background: var(--accent-2);
+      color: var(--ink);
+    }
+
     .nav {
       display: flex;
       gap: 8px;
@@ -95,7 +120,7 @@
 
     .stats {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 12px;
     }
 
@@ -194,6 +219,37 @@
       white-space: nowrap;
     }
 
+    .pnl-positive { color: var(--accent); font-weight: 700; }
+    .pnl-negative { color: var(--danger); font-weight: 700; }
+
+    .pnl-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      line-height: 1;
+      border: 1px solid transparent;
+    }
+
+    .pnl-badge.green {
+      color: #0c6b4a;
+      background: #dff2e8;
+      border-color: #b8d9c8;
+    }
+
+    .pnl-badge.red {
+      color: #8f2f2f;
+      background: #f9e3e3;
+      border-color: #e8baba;
+    }
+
+    .pnl-badge.gray {
+      color: #586254;
+      background: #eef2ec;
+      border-color: #d4dfcf;
+    }
+
     th { color: var(--muted); font-weight: 600; }
 
     .table-wrap {
@@ -217,10 +273,15 @@
   <main class="wrap">
     <section class="topbar">
       <h1>Wes Get Rich Dashboard</h1>
-      <nav class="nav" aria-label="Main navigation">
-        <a href="/transactions" class="active">Transactions</a>
-        <a href="/strategy">Strategy</a>
-      </nav>
+      <div class="bot-control">
+        <span id="bot-state" class="bot-state">Bot paused</span>
+        <button id="bot-toggle" class="bot-toggle paused" type="button">Play bot</button>
+        <nav class="nav" aria-label="Main navigation">
+          <a href="/transactions" class="active">Transactions</a>
+          <a href="/strategy">Strategy</a>
+          <a href="/simulations">Simulations</a>
+        </nav>
+      </div>
     </section>
 
     <section class="card">
@@ -229,94 +290,40 @@
         <div class="stats">
           <article class="stat">
             <div class="label">Total Profit</div>
-            <div class="value" id="sum-profit">$0.00</div>
+            <div class="value" id="sum-profit">CHF 0.00</div>
             <div class="sub">Sum of all positive P/L positions</div>
           </article>
           <article class="stat">
             <div class="label">Total Loss</div>
-            <div class="value" id="sum-loss">$0.00</div>
+            <div class="value" id="sum-loss">CHF 0.00</div>
             <div class="sub">Absolute sum of all negative P/L positions</div>
           </article>
           <article class="stat">
             <div class="label">Current Invested Amount</div>
-            <div class="value" id="sum-invested">$0.00</div>
+            <div class="value" id="sum-invested">CHF 0.00</div>
             <div class="sub">Open buy cost basis (including fees)</div>
           </article>
           <article class="stat">
-            <div class="label">Current Total Value</div>
-            <div class="value" id="sum-value">$0.00</div>
-            <div class="sub" id="sum-price-note">Based on current BTC/USD</div>
+            <div class="label">Current Holdings Value</div>
+            <div class="value" id="sum-value">CHF 0.00</div>
+            <div class="sub" id="sum-price-note">Based on current BTC/CHF</div>
+          </article>
+          <article class="stat">
+            <div class="label">Available Cash to Invest</div>
+            <div class="value" id="sum-cash">CHF 0.00</div>
+            <div class="sub">Local ledger after trades and fees</div>
           </article>
         </div>
       </div>
     </section>
 
     <section class="card">
-      <h2>Create Transaction</h2>
-      <div class="content">
-        <form id="tx-form" class="grid">
-          <label>
-            Platform
-            <input name="platform_name" value="kraken" required />
-          </label>
-          <label>
-            Asset Symbol
-            <input name="asset_symbol" value="BTC" required />
-          </label>
-          <label>
-            Action
-            <select name="action">
-              <option value="BUY">BUY</option>
-              <option value="SELL">SELL</option>
-            </select>
-          </label>
-          <label>
-            Quantity BTC
-            <input name="quantity_btc" type="number" step="0.00000001" min="0.00000001" required />
-          </label>
-          <label>
-            Unit Price USD
-            <input name="unit_price_usd" type="number" step="0.01" min="0.01" required />
-          </label>
-          <label>
-            Fee USD
-            <input name="fee_usd" type="number" step="0.01" min="0" value="0" />
-          </label>
-          <label>
-            Status
-            <select name="status">
-              <option value="OPEN">OPEN</option>
-              <option value="CLOSED">CLOSED</option>
-            </select>
-          </label>
-          <label>
-            Transaction Date
-            <input name="transaction_at" type="datetime-local" required />
-          </label>
-          <label>
-            Strategy Tag
-            <input name="strategy_tag" value="manual-ui" />
-          </label>
-          <label>
-            Paired Buy Transaction ID
-            <input name="paired_buy_transaction_id" type="number" min="1" />
-          </label>
-          <label class="row-full">
-            Notes
-            <textarea name="notes" placeholder="Optional details..."></textarea>
-          </label>
-          <div class="actions row-full">
-            <button class="primary" type="submit">Save Transaction</button>
-            <button class="secondary" type="button" id="refresh-btn">Refresh List</button>
-          </div>
-          <div id="status" class="status row-full"></div>
-        </form>
-      </div>
-    </section>
-
-    <section class="card">
       <h2>Past Transactions</h2>
       <div class="content">
+        <div class="actions" style="margin-top: 0; margin-bottom: 12px;">
+          <button class="secondary" type="button" id="refresh-btn">Refresh List</button>
+        </div>
+        <div id="status" class="status"></div>
         <div class="table-wrap">
           <table>
             <thead>
@@ -326,10 +333,11 @@
                 <th>Asset</th>
                 <th>Action</th>
                 <th>Qty BTC</th>
-                <th>Price USD</th>
-                <th>Fee USD</th>
-                <th>PnL USD</th>
+                <th>Price CHF</th>
+                <th>Fee CHF</th>
+                <th>PnL CHF</th>
                 <th>PnL %</th>
+                <th>Profitability</th>
                 <th>Status</th>
                 <th>Transaction Date</th>
               </tr>
@@ -343,7 +351,6 @@
 
   <script>
     const API_BASE = window.location.origin.replace(':2513', ':2512');
-    const form = document.getElementById('tx-form');
     const statusEl = document.getElementById('status');
     const txBody = document.getElementById('tx-body');
     const refreshBtn = document.getElementById('refresh-btn');
@@ -351,26 +358,49 @@
     const sumLossEl = document.getElementById('sum-loss');
     const sumInvestedEl = document.getElementById('sum-invested');
     const sumValueEl = document.getElementById('sum-value');
+    const sumCashEl = document.getElementById('sum-cash');
     const sumPriceNoteEl = document.getElementById('sum-price-note');
-    const txDateInput = form.querySelector('input[name="transaction_at"]');
-
-    const now = new Date();
-    const offsetMs = now.getTimezoneOffset() * 60000;
-    txDateInput.value = new Date(now.getTime() - offsetMs).toISOString().slice(0, 16);
+    const botStateEl = document.getElementById('bot-state');
+    const botToggleEl = document.getElementById('bot-toggle');
 
     function setStatus(message, ok = true) {
       statusEl.textContent = message;
       statusEl.className = `status ${ok ? 'ok' : 'err'}`;
     }
 
-    function toNum(v) {
-      if (v === '' || v == null) return null;
-      const n = Number(v);
-      return Number.isNaN(n) ? null : n;
+    function renderBotStatus(running) {
+      botStateEl.textContent = running ? 'Bot running' : 'Bot paused';
+      botStateEl.className = `bot-state${running ? ' running' : ''}`;
+      botToggleEl.textContent = running ? 'Pause bot' : 'Play bot';
+      botToggleEl.className = `bot-toggle${running ? '' : ' paused'}`;
+      botToggleEl.setAttribute('aria-label', running ? 'Pause trading bot' : 'Start trading bot');
     }
 
-    function usd(n) {
-      return `$${Number(n).toFixed(2)}`;
+    async function loadBotStatus() {
+      const response = await fetch(`${API_BASE}/bot/status`);
+      if (!response.ok) throw new Error('Failed to fetch bot status');
+      const payload = await response.json();
+      renderBotStatus(payload.running);
+    }
+
+    async function toggleBot() {
+      botToggleEl.disabled = true;
+      try {
+        const running = botStateEl.classList.contains('running');
+        const response = await fetch(`${API_BASE}/bot/${running ? 'pause' : 'start'}`, { method: 'POST' });
+        if (!response.ok) throw new Error('Failed to change bot state');
+        const payload = await response.json();
+        renderBotStatus(payload.running);
+        setStatus(payload.running ? 'Trading bot started' : 'Trading bot paused', true);
+      } catch (error) {
+        setStatus(error.message, false);
+      } finally {
+        botToggleEl.disabled = false;
+      }
+    }
+
+    function chf(n) {
+      return `CHF ${Number(n).toFixed(2)}`;
     }
 
     function pct(n) {
@@ -378,11 +408,46 @@
       return `${Number(n).toFixed(2)}%`;
     }
 
+    function pnlClass(value) {
+      if (value == null) return '';
+      if (value > 0) return 'pnl-positive';
+      if (value < 0) return 'pnl-negative';
+      return '';
+    }
+
+    function resolveProfitability(tx, derived) {
+      const color = (tx.profitability_color || '').toLowerCase();
+      const status = tx.profitability_status || 'UNKNOWN';
+
+      if (color === 'green' || color === 'red' || color === 'gray') {
+        return { color, status };
+      }
+
+      if (derived.pnlUsd == null) return { color: 'gray', status: 'UNKNOWN' };
+      if (derived.pnlUsd > 0) return { color: 'green', status: 'PROFIT' };
+      if (derived.pnlUsd < 0) return { color: 'red', status: 'LOSS' };
+      return { color: 'gray', status: 'BREAKEVEN' };
+    }
+
+    function quoteField(tx, preferred, fallback) {
+      const value = tx[preferred];
+      if (value != null) return Number(value);
+      return Number(tx[fallback]);
+    }
+
     function derivePnl(tx, currentPrice, sellPnlByBuyId, buyById, exchangeFeeRate = 0.001) {
+      const unitPrice = quoteField(tx, 'unit_price_chf', 'unit_price_usd');
+      const fee = quoteField(tx, 'fee_chf', 'fee_usd');
       if (tx.action === 'BUY') {
-        const costBasis = (tx.quantity_btc * tx.unit_price_usd) + tx.fee_usd;
+        const costBasis = (tx.quantity_btc * unitPrice) + fee;
 
         if (tx.status === 'OPEN') {
+          if (tx.unrealized_pnl_chf != null) {
+            const netPnl = Number(tx.unrealized_pnl_chf);
+            const pnlPct = costBasis > 0 ? (netPnl / costBasis) * 100 : null;
+            return { pnlUsd: netPnl, pnlPct };
+          }
+
           const marketValue = tx.quantity_btc * currentPrice;
           const grossPnl = marketValue - costBasis;
           const expectedSellFee = marketValue * exchangeFeeRate;
@@ -401,18 +466,21 @@
       }
 
       if (tx.action === 'SELL') {
-        if (tx.realized_pnl_usd == null) {
+        const realizedPnl = tx.realized_pnl_chf ?? tx.realized_pnl_usd;
+        if (realizedPnl == null) {
           return { pnlUsd: null, pnlPct: null };
         }
 
         const buyTx = tx.paired_buy_transaction_id ? buyById.get(tx.paired_buy_transaction_id) : null;
         if (!buyTx) {
-          return { pnlUsd: tx.realized_pnl_usd, pnlPct: null };
+          return { pnlUsd: Number(realizedPnl), pnlPct: null };
         }
 
-        const costBasis = (buyTx.quantity_btc * buyTx.unit_price_usd) + buyTx.fee_usd;
-        const pnlPct = costBasis > 0 ? (tx.realized_pnl_usd / costBasis) * 100 : null;
-        return { pnlUsd: tx.realized_pnl_usd, pnlPct };
+        const buyUnitPrice = quoteField(buyTx, 'unit_price_chf', 'unit_price_usd');
+        const buyFee = quoteField(buyTx, 'fee_chf', 'fee_usd');
+        const costBasis = (buyTx.quantity_btc * buyUnitPrice) + buyFee;
+        const pnlPct = costBasis > 0 ? (Number(realizedPnl) / costBasis) * 100 : null;
+        return { pnlUsd: Number(realizedPnl), pnlPct };
       }
 
       return { pnlUsd: null, pnlPct: null };
@@ -422,7 +490,7 @@
       const res = await fetch(`${API_BASE}/market/price?asset_symbol=BTC`);
       if (!res.ok) throw new Error('Failed to fetch BTC price');
       const payload = await res.json();
-      return Number(payload.price_usd);
+      return Number(payload.price_chf);
     }
 
     async function loadTransactions() {
@@ -437,7 +505,7 @@
       const items = await txRes.json();
       const metrics = await metricsRes.json();
       
-      const currentPrice = metrics.current_price_usd;
+      const currentPrice = Number(items[0]?.current_price_chf ?? metrics.current_price_chf);
       
       const buyById = new Map();
       const sellPnlByBuyId = new Map();
@@ -451,22 +519,52 @@
         }
       }
 
-      sumProfitEl.textContent = usd(metrics.total_realized_profit_usd);
-      sumLossEl.textContent = usd(metrics.total_realized_loss_usd);
-      
-      const currentInvested = metrics.total_invested_usd;
-      const currentValue = metrics.total_invested_usd + metrics.fee_adjusted_unrealized_pnl_usd;
-      
-      sumInvestedEl.textContent = usd(currentInvested);
-      sumValueEl.textContent = usd(currentValue);
+      // Recalculate metrics in CHF from transactions
+      let totalProfit = 0;
+      let totalLoss = 0;
+      let totalInvested = 0;
+      let totalCurrentValue = 0;
+
+      for (const tx of items) {
+        const unitPrice = quoteField(tx, 'unit_price_chf', 'unit_price_usd');
+        const fee = quoteField(tx, 'fee_chf', 'fee_usd');
+
+        if (tx.action === 'BUY') {
+          const costBasis = (tx.quantity_btc * unitPrice) + fee;
+          totalInvested += costBasis;
+
+          if (tx.status === 'OPEN') {
+            const marketValue = tx.quantity_btc * currentPrice;
+            totalCurrentValue += marketValue;
+          } else if (tx.status === 'CLOSED' && tx.paired_buy_transaction_id == null) {
+            // Closed BUY without matching SELL (shouldn't happen, but handle it)
+            totalCurrentValue += 0;
+          }
+        } else if (tx.action === 'SELL' && tx.status === 'CLOSED') {
+          const realizedPnl = quoteField(tx, 'realized_pnl_chf', 'realized_pnl_usd');
+          if (realizedPnl > 0) {
+            totalProfit += realizedPnl;
+          } else if (realizedPnl < 0) {
+            totalLoss += Math.abs(realizedPnl);
+          }
+        }
+      }
+
+      sumProfitEl.textContent = chf(totalProfit);
+      sumLossEl.textContent = chf(totalLoss);
+      sumInvestedEl.textContent = chf(totalInvested);
+      sumValueEl.textContent = chf(totalCurrentValue);
+      sumCashEl.textContent = chf(metrics.cash_balance_chf);
       sumPriceNoteEl.innerHTML = `
-        Based on BTC/USD ${usd(currentPrice)}<br>
-        <small style="color: var(--muted);">Unrealized PnL is <strong>net of exit fees</strong></small>
+        Based on current BTC/CHF ${Number(currentPrice).toFixed(2)}<br>
+        <small style="color: var(--muted);">Current market value of all open positions</small>
       `;
 
       txBody.innerHTML = '';
       for (const tx of items) {
         const derived = derivePnl(tx, currentPrice, sellPnlByBuyId, buyById, metrics.exchange_fee_rate);
+        const profitability = resolveProfitability(tx, derived);
+        const pnlCss = pnlClass(derived.pnlUsd);
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${tx.id}</td>
@@ -474,54 +572,17 @@
           <td>${tx.asset_symbol}</td>
           <td>${tx.action}</td>
           <td>${Number(tx.quantity_btc).toFixed(8)}</td>
-          <td>${Number(tx.unit_price_usd).toFixed(2)}</td>
-          <td>${Number(tx.fee_usd).toFixed(2)}</td>
-          <td>${derived.pnlUsd == null ? '-' : Number(derived.pnlUsd).toFixed(2)}</td>
-          <td>${pct(derived.pnlPct)}</td>
+          <td>${quoteField(tx, 'unit_price_chf', 'unit_price_usd').toFixed(2)}</td>
+          <td>${quoteField(tx, 'fee_chf', 'fee_usd').toFixed(2)}</td>
+          <td class="${pnlCss}">${derived.pnlUsd == null ? '-' : Number(derived.pnlUsd).toFixed(2)}</td>
+          <td class="${pnlCss}">${pct(derived.pnlPct)}</td>
+          <td><span class="pnl-badge ${profitability.color}">${profitability.status}</span></td>
           <td>${tx.status}</td>
           <td>${new Date(tx.transaction_at).toLocaleString()}</td>
         `;
         txBody.appendChild(tr);
       }
     }
-
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      const data = new FormData(form);
-
-      const payload = {
-        platform_name: data.get('platform_name')?.toString().trim(),
-        asset_symbol: data.get('asset_symbol')?.toString().trim().toUpperCase(),
-        action: data.get('action'),
-        quantity_btc: toNum(data.get('quantity_btc')),
-        unit_price_usd: toNum(data.get('unit_price_usd')),
-        fee_usd: toNum(data.get('fee_usd')) ?? 0,
-        status: data.get('status'),
-        transaction_at: new Date(data.get('transaction_at')).toISOString(),
-        strategy_tag: data.get('strategy_tag')?.toString().trim() || null,
-        notes: data.get('notes')?.toString().trim() || null,
-        paired_buy_transaction_id: toNum(data.get('paired_buy_transaction_id')),
-      };
-
-      try {
-        const res = await fetch(`${API_BASE}/transactions`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({ detail: 'Unknown error' }));
-          throw new Error(err.detail || 'Failed to create transaction');
-        }
-
-        const created = await res.json();
-        setStatus(`Saved transaction #${created.id}`, true);
-        await loadTransactions();
-      } catch (error) {
-        setStatus(error.message, false);
-      }
-    });
 
     refreshBtn.addEventListener('click', async () => {
       try {
@@ -532,7 +593,9 @@
       }
     });
 
-    loadTransactions().catch((error) => setStatus(error.message, false));
+    botToggleEl.addEventListener('click', toggleBot);
+
+    Promise.all([loadTransactions(), loadBotStatus()]).catch((error) => setStatus(error.message, false));
   </script>
 </body>
 </html>

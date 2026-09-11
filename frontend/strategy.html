@@ -200,6 +200,7 @@
       <nav class="nav" aria-label="Main navigation">
         <a href="/transactions">Transactions</a>
         <a href="/strategy" class="active">Strategy</a>
+        <a href="/simulations">Simulations</a>
       </nav>
     </section>
 
@@ -337,11 +338,11 @@
     }
 
     function renderMetrics(metrics) {
-      currentPriceEl.textContent = usd(metrics.current_price_usd);
+      currentPriceEl.textContent = usd(metrics.current_price_chf);
       windowChangeEl.textContent = pct(metrics.change_window_pct);
-      avgPriceEl.textContent = usd(metrics.avg_price_usd);
-      minPriceEl.textContent = usd(metrics.min_price_usd);
-      maxPriceEl.textContent = usd(metrics.max_price_usd);
+      avgPriceEl.textContent = usd(metrics.avg_price_chf);
+      minPriceEl.textContent = usd(metrics.min_price_chf);
+      maxPriceEl.textContent = usd(metrics.max_price_chf);
 
       hourlyBody.innerHTML = '';
       for (const row of metrics.hourly) {
@@ -349,10 +350,10 @@
         tr.innerHTML = `
           <td>${new Date(row.hour_start).toLocaleString()}</td>
           <td>${row.sample_count}</td>
-          <td>${usd(row.min_price_usd)}</td>
-          <td>${usd(row.avg_price_usd)}</td>
-          <td>${usd(row.max_price_usd)}</td>
-          <td>${usd(row.last_price_usd)}</td>
+          <td>${usd(row.min_price_chf)}</td>
+          <td>${usd(row.avg_price_chf)}</td>
+          <td>${usd(row.max_price_chf)}</td>
+          <td>${usd(row.last_price_chf)}</td>
         `;
         hourlyBody.appendChild(tr);
       }
@@ -366,7 +367,7 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${new Date(item.sampled_at).toLocaleString()}</td>
-          <td>${usd(item.price_usd)}</td>
+          <td>${usd(item.price_chf)}</td>
           <td>${item.source}</td>
         `;
         historyBody.appendChild(tr);
